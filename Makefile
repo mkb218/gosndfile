@@ -6,8 +6,6 @@ include $(GOROOT)/src/Make.inc
 TARG=sndfile
 GOFILES=\
 
-CGO_LDFLAGS+=-lsndfile
-
 
 CGOFILES=\
 	sndfile.go
