@@ -193,7 +193,11 @@ func (f File) WriteSync() {
 
 It is important to note that the data type used by the calling program and the data format of the file do not need to be the same. For instance, it is possible to open a 16 bit PCM encoded WAV file and read the data into a slice of floats. The library seamlessly converts between the two formats on-the-fly. See Note 1.
 
-Returns the number of items read. Unless the end of the file was reached during the read, the return value should equal the number of items requested. Attempts to read beyond the end of the file will not result in an error but will cause ReadItems to return less than the number of items requested or 0 if already at the end of the file.*/
+Returns the number of items read. Unless the end of the file was reached during the read, the return value should equal the number of items requested. Attempts to read beyond the end of the file will not result in an error but will cause ReadItems to return less than the number of items requested or 0 if already at the end of the file.
+
+out must be a slice or array of int, int16, int32, float32, or float64.
+
+*/
 func (f File) ReadItems(out interface{}) (read int64, err os.Error) {
 	t := reflect.TypeOf(out)
 	if t.Kind() != reflect.Array && t.Kind() != reflect.Slice {
@@ -206,20 +210,14 @@ func (f File) ReadItems(out interface{}) (read int64, err os.Error) {
 	var n C.sf_count_t
 	switch t.Elem().Kind() {
 	case reflect.Int16:
-		fallthrough
-	case reflect.Uint16:
 		n = C.sf_readf_short(f.s, (*C.short)(unsafe.Pointer(o.Index(0).Addr().Pointer())), C.sf_count_t(l))
 	case reflect.Int32:
-		fallthrough
-	case reflect.Uint32:
 		n = C.sf_readf_int(f.s, (*C.int)(unsafe.Pointer(o.Index(0).Addr().Pointer())), C.sf_count_t(l))
 	case reflect.Float32:
 		n = C.sf_readf_float(f.s, (*C.float)(unsafe.Pointer(o.Index(0).Addr().Pointer())), C.sf_count_t(l))
 	case reflect.Float64:
 		n = C.sf_readf_double(f.s, (*C.double)(unsafe.Pointer(o.Index(0).Addr().Pointer())), C.sf_count_t(l))
 	case reflect.Int:
-		fallthrough
-	case reflect.Uint:
 		switch t.Bits() {
 		case 32:
 			n = C.sf_readf_int(f.s, (*C.int)(unsafe.Pointer(o.Index(0).Addr().Pointer())), C.sf_count_t(l))
