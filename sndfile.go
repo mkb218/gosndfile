@@ -123,28 +123,28 @@ const (
 	SF_FORMAT_ENDMASK  Format = 0x30000000
 )
 
-func Open(name string, mode Mode, info Info) (o File, err os.Error) {
+func Open(name string, mode Mode, info *Info) (o File, err os.Error) {
 	c := C.CString(name)
 	defer C.free(unsafe.Pointer(c))
-	o.s = C.sf_open(c, C.int(mode), (*C.SF_INFO)(unsafe.Pointer(&info)))
+	o.s = C.sf_open(c, C.int(mode), (*C.SF_INFO)(unsafe.Pointer(info)))
 	if o.s == nil {
 		err = sErrorType(C.sf_error(o.s))
 	}
-	o.i = info
+	o.i = *info
 	return
 }
 
 // This probably won't work on windows
-func OpenFd(fd int, mode Mode, info Info, close_desc bool) (o File, err os.Error) {
+func OpenFd(fd int, mode Mode, info *Info, close_desc bool) (o File, err os.Error) {
 	var cd C.int
 	if close_desc {
 		cd = 1
 	}
-	o.s = C.sf_open_fd(C.int(fd), C.int(mode), (*C.SF_INFO)(unsafe.Pointer(&info)), cd)
+	o.s = C.sf_open_fd(C.int(fd), C.int(mode), (*C.SF_INFO)(unsafe.Pointer(info)), cd)
 	if o.s == nil {
 		err = sErrorType(C.sf_error(o.s))
 	}
-	o.i = info
+	o.i = *info
 	return
 }
 
@@ -194,35 +194,37 @@ func (f File) WriteSync() {
 It is important to note that the data type used by the calling program and the data format of the file do not need to be the same. For instance, it is possible to open a 16 bit PCM encoded WAV file and read the data into a slice of floats. The library seamlessly converts between the two formats on-the-fly. See Note 1.
 
 Returns the number of items read. Unless the end of the file was reached during the read, the return value should equal the number of items requested. Attempts to read beyond the end of the file will not result in an error but will cause ReadItems to return less than the number of items requested or 0 if already at the end of the file.*/
-func (f File) ReadItems(out []interface{}) (read int64, err os.Error) {
-	items := len(out)
-	if items < 1 {
-		err = os.EOF
-		return
+func (f File) ReadItems(out interface{}) (read int64, err os.Error) {
+	t := reflect.TypeOf(out)
+	if t.Kind() != reflect.Array && t.Kind() != reflect.Slice {
+		os.NewError("You need to give me an array!")
 	}
+	
+	v := reflect.ValueOf(out)
+	l := v.Len()
+	o := v.Slice(0,l-1)
 	var n C.sf_count_t
-	t := reflect.TypeOf(out[0])
-	switch t.Kind() {
+	switch t.Elem().Kind() {
 	case reflect.Int16:
 		fallthrough
 	case reflect.Uint16:
-		n = C.sf_read_short(f.s, (*C.short)(unsafe.Pointer(&out[0])), C.sf_count_t(items))
+		n = C.sf_readf_short(f.s, (*C.short)(unsafe.Pointer(o.Index(0).Addr().Pointer())), C.sf_count_t(l))
 	case reflect.Int32:
 		fallthrough
 	case reflect.Uint32:
-		n = C.sf_read_int(f.s, (*C.int)(unsafe.Pointer(&out[0])), C.sf_count_t(items))
+		n = C.sf_readf_int(f.s, (*C.int)(unsafe.Pointer(o.Index(0).Addr().Pointer())), C.sf_count_t(l))
 	case reflect.Float32:
-		n = C.sf_read_float(f.s, (*C.float)(unsafe.Pointer(&out[0])), C.sf_count_t(items))
+		n = C.sf_readf_float(f.s, (*C.float)(unsafe.Pointer(o.Index(0).Addr().Pointer())), C.sf_count_t(l))
 	case reflect.Float64:
-		n = C.sf_read_double(f.s, (*C.double)(unsafe.Pointer(&out[0])), C.sf_count_t(items))
+		n = C.sf_readf_double(f.s, (*C.double)(unsafe.Pointer(o.Index(0).Addr().Pointer())), C.sf_count_t(l))
 	case reflect.Int:
 		fallthrough
 	case reflect.Uint:
 		switch t.Bits() {
 		case 32:
-			n = C.sf_read_int(f.s, (*C.int)(unsafe.Pointer(&out[0])), C.sf_count_t(items))
+			n = C.sf_readf_int(f.s, (*C.int)(unsafe.Pointer(o.Index(0).Addr().Pointer())), C.sf_count_t(l))
 		case 16: // doubtful
-			n = C.sf_read_short(f.s, (*C.short)(unsafe.Pointer(&out[0])), C.sf_count_t(items))
+			n = C.sf_readf_short(f.s, (*C.short)(unsafe.Pointer(o.Index(0).Addr().Pointer())), C.sf_count_t(l))
 		default:
 			err = os.NewError("Unsupported type in read buffer, needs (u)int16, (u)int32, or float type")
 		}
@@ -244,35 +246,42 @@ func (f File) ReadItems(out []interface{}) (read int64, err os.Error) {
 /*The file read frames functions fill the array pointed to by out with the requested number of frames of data. The array must be large enough to hold the product of frames and the number of channels.
 
 The sf_readf_XXXX functions return the number of frames read. Unless the end of the file was reached during the read, the return value should equal the number of frames requested. Attempts to read beyond the end of the file will not result in an error but will cause the sf_readf_XXXX functions to return less than the number of frames requested or 0 if already at the end of the file.*/
-func (f File) ReadFrames(out []interface{}) (read int64, err os.Error) {
-	frames := len(out)/int(f.i.Channels)
+func (f File) ReadFrames(out interface{}) (read int64, err os.Error) {
+	t := reflect.TypeOf(out)
+	if t.Kind() != reflect.Array && t.Kind() != reflect.Slice {
+		os.NewError("You need to give me an array!")
+	}
+	
+	v := reflect.ValueOf(out)
+	l := v.Len()
+	o := v.Slice(0,l-1)
+	frames := l/int(f.i.Channels)
 	if frames < 1 {
 		err = os.EOF
 		return
 	}
 	var n C.sf_count_t
-	t := reflect.TypeOf(out[0])
-	switch t.Kind() {
+	switch t.Elem().Kind() {
 	case reflect.Int16:
 		fallthrough
 	case reflect.Uint16:
-		n = C.sf_readf_short(f.s, (*C.short)(unsafe.Pointer(&out[0])), C.sf_count_t(frames))
+		n = C.sf_readf_short(f.s, (*C.short)(unsafe.Pointer(o.Index(0).Addr().Pointer())), C.sf_count_t(frames))
 	case reflect.Int32:
 		fallthrough
 	case reflect.Uint32:
-		n = C.sf_readf_int(f.s, (*C.int)(unsafe.Pointer(&out[0])), C.sf_count_t(frames))
+		n = C.sf_readf_int(f.s, (*C.int)(unsafe.Pointer(o.Index(0).Addr().Pointer())), C.sf_count_t(frames))
 	case reflect.Float32:
-		n = C.sf_readf_float(f.s, (*C.float)(unsafe.Pointer(&out[0])), C.sf_count_t(frames))
+		n = C.sf_readf_float(f.s, (*C.float)(unsafe.Pointer(o.Index(0).Addr().Pointer())), C.sf_count_t(frames))
 	case reflect.Float64:
-		n = C.sf_readf_double(f.s, (*C.double)(unsafe.Pointer(&out[0])), C.sf_count_t(frames))
+		n = C.sf_readf_double(f.s, (*C.double)(unsafe.Pointer(o.Index(0).Addr().Pointer())), C.sf_count_t(frames))
 	case reflect.Int:
 		fallthrough
 	case reflect.Uint:
 		switch t.Bits() {
 		case 32:
-			n = C.sf_readf_int(f.s, (*C.int)(unsafe.Pointer(&out[0])), C.sf_count_t(frames))
+			n = C.sf_readf_int(f.s, (*C.int)(unsafe.Pointer(o.Index(0).Addr().Pointer())), C.sf_count_t(frames))
 		case 16: // doubtful
-			n = C.sf_readf_short(f.s, (*C.short)(unsafe.Pointer(&out[0])), C.sf_count_t(frames))
+			n = C.sf_readf_short(f.s, (*C.short)(unsafe.Pointer(o.Index(0).Addr().Pointer())), C.sf_count_t(frames))
 		default:
 			err = os.NewError("Unsupported type in read buffer, needs (u)int16, (u)int32, or float type")
 		}
