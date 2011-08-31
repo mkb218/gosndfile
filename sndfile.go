@@ -1,9 +1,7 @@
 package sndfile
 
-// The sndfile package is a binding for libsndfile. It packages the libsndfile API in a go-like manner.
+// The sndfile package is a binding for libsndfile. It packages the libsndfile API in a go-like manner. Note for macports users: set environment variables CGO_CFLAGS and CGO_LDFLAGS to "-I/opt/local/include" and "-L/opt/local/lib" respectively.
 
-// #cgo CFLAGS: -I/opt/local/include
-// #cgo LDFLAGS: -L/opt/local/lib -lsndfile
 // #include <stdlib.h>
 // #include <sndfile.h>
 import "C"
