@@ -16,7 +16,7 @@ import (
 // A sound file. Does not conform to io.Reader.
 type File struct {
 	s *C.SNDFILE
-	i Info
+	Format Info
 }
 
 // sErrorType represents a sndfile API error and grabs error description strings from the API.
@@ -129,7 +129,7 @@ func Open(name string, mode Mode, info *Info) (o File, err os.Error) {
 	if o.s == nil {
 		err = sErrorType(C.sf_error(o.s))
 	}
-	o.i = *info
+	o.Format = *info
 	return
 }
 
@@ -143,7 +143,7 @@ func OpenFd(fd int, mode Mode, info *Info, close_desc bool) (o File, err os.Erro
 	if o.s == nil {
 		err = sErrorType(C.sf_error(o.s))
 	}
-	o.i = *info
+	o.Format = *info
 	return
 }
 
@@ -252,7 +252,7 @@ func (f File) ReadFrames(out interface{}) (read int64, err os.Error) {
 	v := reflect.ValueOf(out)
 	l := v.Len()
 	o := v.Slice(0,l-1)
-	frames := l/int(f.i.Channels)
+	frames := l/int(f.Format.Channels)
 	if frames < 1 {
 		err = os.EOF
 		return
