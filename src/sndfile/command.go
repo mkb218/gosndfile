@@ -148,3 +148,6 @@ func (f *File) GetDoubleNormalization() bool {
 }
 
 // oh god this is boring.
+func (f *File) GenericCmd(cmd C.int, data unsafe.Pointer, datasize int) int {
+	return int(C.sf_command(f.s, cmd, data, C.int(datasize)))
+}
