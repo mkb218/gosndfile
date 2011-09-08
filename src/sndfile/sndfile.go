@@ -317,7 +317,7 @@ const (
 	Last        StringType = C.SF_STR_LAST
 )
 
-//The GetString() function returns the specified string if it exists and a NULL pointer otherwise. In addition to the string ids above, First (== Title) and Last (always the same as the highest numbers string id) are also available to allow iteration over all the available string ids.
+//The GetString() method returns the specified string if it exists and a NULL pointer otherwise. In addition to the string ids above, First (== Title) and Last (always the same as the highest numbers string id) are also available to allow iteration over all the available string ids.
 func (f *File) GetString(typ StringType) (out *string) {
 	// although it's not clear from the docs, sf_get_string doesn't require you to free the string that is returned
 	s := C.sf_get_string(f.s, C.int(typ))
@@ -328,6 +328,7 @@ func (f *File) GetString(typ StringType) (out *string) {
 	return
 }
 
+//The SetString() method sets the string data ina file. It returns nil on success and non-nil on error.
 func (f *File) SetString(in string, typ StringType) (err os.Error) {
 	s := C.CString(in)
 	defer C.free(unsafe.Pointer(s))
@@ -337,4 +338,112 @@ func (f *File) SetString(in string, typ StringType) (err os.Error) {
 	return
 }
 
-// going to skip raw I/O for now
+//The file write items functions write the data in the array pointed to by ptr to the file. The items parameter must be an integer product of the number of channels or an error will occur.
+//
+//It is important to note that the data type used by the calling program and the data format of the file do not need to be the same. For instance, it is possible to open a 16 bit PCM encoded WAV file and write the data from a []float32. The library seamlessly converts between the two formats on-the-fly.
+//
+//Returns the number of items written (which should be the same as the items parameter).
+func (f *File) WriteItems(in interface{}) (written int64, err os.Error) {
+	t := reflect.TypeOf(in)
+	if t.Kind() != reflect.Array && t.Kind() != reflect.Slice {
+		os.NewError("You need to give me an array!")
+	}
+
+	v := reflect.ValueOf(in)
+	l := v.Len()
+	o := v.Slice(0, l-1)
+	var n C.sf_count_t
+	p := unsafe.Pointer(o.Index(0).Addr().Pointer())
+	switch t.Elem().Kind() {
+	case reflect.Int16:
+		fallthrough
+	case reflect.Uint16:
+		n = C.sf_write_short(f.s, (*C.short)(p), C.sf_count_t(l))
+	case reflect.Int32:
+		fallthrough
+	case reflect.Uint32:
+		n = C.sf_write_int(f.s, (*C.int)(p), C.sf_count_t(l))
+	case reflect.Float32:
+		n = C.sf_write_float(f.s, (*C.float)(p), C.sf_count_t(l))
+	case reflect.Float64:
+		n = C.sf_write_double(f.s, (*C.double)(p), C.sf_count_t(l))
+	case reflect.Int:
+		fallthrough
+	case reflect.Uint:
+		switch t.Bits() {
+		case 32:
+			n = C.sf_write_int(f.s, (*C.int)(p), C.sf_count_t(l))
+		case 16: // doubtful
+			n = C.sf_write_short(f.s, (*C.short)(p), C.sf_count_t(l))
+		default:
+			err = os.NewError("Unsupported type in read buffer, needs (u)int16, (u)int32, or float type")
+		}
+	default:
+		err = os.NewError("Unsupported type in read buffer, needs (u)int16, (u)int32, or float type")
+	}
+	if err != nil {
+		written = -1
+		return
+	}
+
+	written = int64(n)
+	if int(n) != l {
+		err = sErrorType(C.sf_error(f.s))
+	}
+	return
+}
+
+func (f *File) WriteFrames(in interface{}) (written int64, err os.Error) {
+	t := reflect.TypeOf(in)
+	if t.Kind() != reflect.Array && t.Kind() != reflect.Slice {
+		os.NewError("You need to give me an array!")
+	}
+
+	v := reflect.ValueOf(in)
+	l := v.Len()
+	o := v.Slice(0, l-1)
+	frames := l / int(f.Format.Channels)
+	if frames < 1 {
+		err = os.EOF
+		return
+	}
+	var n C.sf_count_t
+	p := unsafe.Pointer(o.Index(0).Addr().Pointer())
+	switch t.Elem().Kind() {
+	case reflect.Int16:
+		fallthrough
+	case reflect.Uint16:
+		n = C.sf_writef_short(f.s, (*C.short)(p), C.sf_count_t(frames))
+	case reflect.Int32:
+		fallthrough
+	case reflect.Uint32:
+		n = C.sf_writef_int(f.s, (*C.int)(p), C.sf_count_t(frames))
+	case reflect.Float32:
+		n = C.sf_writef_float(f.s, (*C.float)(p), C.sf_count_t(frames))
+	case reflect.Float64:
+		n = C.sf_writef_double(f.s, (*C.double)(p), C.sf_count_t(frames))
+	case reflect.Int:
+		fallthrough
+	case reflect.Uint:
+		switch t.Bits() {
+		case 32:
+			n = C.sf_writef_int(f.s, (*C.int)(p), C.sf_count_t(frames))
+		case 16: // doubtful
+			n = C.sf_writef_short(f.s, (*C.short)(p), C.sf_count_t(frames))
+		default:
+			err = os.NewError("Unsupported type in written buffer, needs (u)int16, (u)int32, or float type")
+		}
+	default:
+		err = os.NewError("Unsupported type in written buffer, needs (u)int16, (u)int32, or float type")
+	}
+	if err != nil {
+		written = -1
+		return
+	}
+
+	written = int64(n)
+	if int(n) != frames {
+		err = sErrorType(C.sf_error(f.s))
+	}
+	return
+}
