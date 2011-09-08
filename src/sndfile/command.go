@@ -23,6 +23,7 @@ func GetLibVersion() (s string, err os.Error) {
 }
 
 // Retrieve the log buffer generated when opening a file as a string. This log buffer can often contain a good reason for why libsndfile failed to open a particular file.
+//needs test
 func (f *File) GetLogInfo() (s string, err os.Error) {
 	l := C.sf_command(f.s, C.SFC_GET_LOG_INFO, nil, 0)
 	c := make([]byte, l)
@@ -36,6 +37,7 @@ func (f *File) GetLogInfo() (s string, err os.Error) {
 }
 
 // Retrieve the measured maximum signal value. This involves reading through the whole file which can be slow on large files.
+//needs test
 func (f *File) CalcSignalMax() (ret float64, err os.Error) {
 	e := C.sf_command(f.s, C.SFC_CALC_SIGNAL_MAX, unsafe.Pointer(&ret), 8)
 	if e != 0 {
@@ -45,6 +47,7 @@ func (f *File) CalcSignalMax() (ret float64, err os.Error) {
 }
 
 // Retrieve the measured normalised maximum signal value. This involves reading through the whole file which can be slow on large files.
+//needs test
 func (f *File) CalcNormSignalMax() (ret float64, err os.Error) {
 	e := C.sf_command(f.s, C.SFC_CALC_NORM_SIGNAL_MAX, unsafe.Pointer(&ret), 8)
 	if e != 0 {
@@ -54,6 +57,7 @@ func (f *File) CalcNormSignalMax() (ret float64, err os.Error) {
 }
 
 //Calculate the peak value (ie a single number) for each channel. This involves reading through the whole file which can be slow on large files.
+//needs test
 func (f *File) CalcMaxAllChannels() (ret []float64, err os.Error) {
 	c := f.Format.Channels
 	ret = make([]float64, c)
@@ -65,6 +69,7 @@ func (f *File) CalcMaxAllChannels() (ret []float64, err os.Error) {
 }
 
 //Calculate the normalised peak for each channel. This involves reading through the whole file which can be slow on large files.
+//needs test
 func (f *File) CalcNormMaxAllChannels() (ret []float64, err os.Error) {
 	c := f.Format.Channels
 	ret = make([]float64, c)
@@ -76,6 +81,7 @@ func (f *File) CalcNormMaxAllChannels() (ret []float64, err os.Error) {
 }
 
 //Retrieve the peak value for the file as stored in the file header.
+//needs test
 func (f *File) GetSignalMax() (ret float64, ok bool) {
 	r := C.sf_command(f.s, C.SFC_GET_SIGNAL_MAX, unsafe.Pointer(&ret), 8)
 	if r == C.SF_TRUE {
@@ -85,6 +91,7 @@ func (f *File) GetSignalMax() (ret float64, ok bool) {
 }
 
 //Retrieve the peak value for the file as stored in the file header.
+//needs test
 func (f *File) GetMaxAllChannels() (ret []float64, ok bool) {
 	c := f.Format.Channels
 	ret = make([]float64, c)
@@ -104,6 +111,7 @@ For write operations, setting normalisation to true means than all data supplied
 For both cases, setting normalisation to false means that no scaling will take place.
 
 Returns the previous normalization setting. */
+//needs test
 func (f *File) SetFloatNormalization(norm bool) bool {
 	i := C.SF_FALSE
 	if norm {
@@ -125,6 +133,7 @@ For write operations, setting normalisation to true means than all data supplied
 For both cases, setting normalisation to false means that no scaling will take place.
 
 Returns the previous normalization setting. */
+//needs test
 func (f *File) SetDoubleNormalization(norm bool) bool {
 	i := C.SF_FALSE
 	if norm {
@@ -138,16 +147,19 @@ func (f *File) SetDoubleNormalization(norm bool) bool {
 }
 
 // Returns the current float32 normalization mode.
+//needs test
 func (f *File) GetFloatNormalization() bool {
 	return (C.sf_command(f.s, C.SFC_GET_NORM_FLOAT, nil, 0) == C.SF_TRUE)
 }
 
 // Returns the current float64 normalization mode.
+//needs test
 func (f *File) GetDoubleNormalization() bool {
 	return (C.sf_command(f.s, C.SFC_GET_NORM_DOUBLE, nil, 0) == C.SF_TRUE)
 }
 
 // oh god this is boring.
+//needs test, needs doc
 func (f *File) GenericCmd(cmd C.int, data unsafe.Pointer, datasize int) int {
 	return int(C.sf_command(f.s, cmd, data, C.int(datasize)))
 }

@@ -318,6 +318,7 @@ const (
 )
 
 //The GetString() method returns the specified string if it exists and a NULL pointer otherwise. In addition to the string ids above, First (== Title) and Last (always the same as the highest numbers string id) are also available to allow iteration over all the available string ids.
+// needs test
 func (f *File) GetString(typ StringType) (out *string) {
 	// although it's not clear from the docs, sf_get_string doesn't require you to free the string that is returned
 	s := C.sf_get_string(f.s, C.int(typ))
@@ -329,6 +330,7 @@ func (f *File) GetString(typ StringType) (out *string) {
 }
 
 //The SetString() method sets the string data ina file. It returns nil on success and non-nil on error.
+// needs test
 func (f *File) SetString(in string, typ StringType) (err os.Error) {
 	s := C.CString(in)
 	defer C.free(unsafe.Pointer(s))
@@ -343,6 +345,7 @@ func (f *File) SetString(in string, typ StringType) (err os.Error) {
 //It is important to note that the data type used by the calling program and the data format of the file do not need to be the same. For instance, it is possible to open a 16 bit PCM encoded WAV file and write the data from a []float32. The library seamlessly converts between the two formats on-the-fly.
 //
 //Returns the number of items written (which should be the same as the items parameter).
+// needs test
 func (f *File) WriteItems(in interface{}) (written int64, err os.Error) {
 	t := reflect.TypeOf(in)
 	if t.Kind() != reflect.Array && t.Kind() != reflect.Slice {
@@ -393,6 +396,7 @@ func (f *File) WriteItems(in interface{}) (written int64, err os.Error) {
 	return
 }
 
+// needs test + doc
 func (f *File) WriteFrames(in interface{}) (written int64, err os.Error) {
 	t := reflect.TypeOf(in)
 	if t.Kind() != reflect.Array && t.Kind() != reflect.Slice {
