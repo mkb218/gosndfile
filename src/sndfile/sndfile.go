@@ -15,7 +15,7 @@ import (
 
 // A sound file. Does not conform to io.Reader.
 type File struct {
-	s *C.SNDFILE
+	s      *C.SNDFILE
 	Format Info
 }
 
@@ -122,7 +122,8 @@ const (
 	SF_FORMAT_ENDMASK  Format = 0x30000000
 )
 
-func Open(name string, mode Mode, info *Info) (o File, err os.Error) {
+func Open(name string, mode Mode, info *Info) (o *File, err os.Error) {
+	o = new(File)
 	c := C.CString(name)
 	defer C.free(unsafe.Pointer(c))
 	o.s = C.sf_open(c, C.int(mode), (*C.SF_INFO)(unsafe.Pointer(info)))
@@ -133,8 +134,9 @@ func Open(name string, mode Mode, info *Info) (o File, err os.Error) {
 	return
 }
 
-// This probably won't work on windows
-func OpenFd(fd int, mode Mode, info *Info, close_desc bool) (o File, err os.Error) {
+// This probably won't work on windows, but then libsndfile isn't supported on windows!
+func OpenFd(fd int, mode Mode, info *Info, close_desc bool) (o *File, err os.Error) {
+	o = new(File)
 	var cd C.int
 	if close_desc {
 		cd = 1
@@ -165,7 +167,7 @@ const (
 )
 
 //The file seek functions work much like lseek in unistd.h with the exception that the non-audio data is ignored and the seek only moves within the audio data section of the file. In addition, seeks are defined in number of (multichannel) frames. Therefore, a seek in a stereo file from the current position forward with an offset of 1 would skip forward by one sample of both channels. This function returns the new offset, and a non-nil error value if unsuccessful
-func (f File) Seek(frames int64, w Whence) (offset int64, err os.Error) {
+func (f *File) Seek(frames int64, w Whence) (offset int64, err os.Error) {
 	r := C.sf_seek(f.s, C.sf_count_t(frames), C.int(w))
 	if r == -1 {
 		err = sErrorType(C.sf_error(f.s))
@@ -176,7 +178,7 @@ func (f File) Seek(frames int64, w Whence) (offset int64, err os.Error) {
 }
 
 // The close function closes the file, deallocates its internal buffers and returns a non-nil error value in cas of error
-func (f File) Close() (err os.Error) {
+func (f *File) Close() (err os.Error) {
 	if C.sf_close(f.s) != 0 {
 		err = sErrorType(C.sf_error(f.s))
 	}
@@ -184,7 +186,7 @@ func (f File) Close() (err os.Error) {
 }
 
 //If the file is opened Write or ReadWrite, call the operating system's function to force the writing of all file cache buffers to disk. If the file is opened Read no action is taken.
-func (f File) WriteSync() {
+func (f *File) WriteSync() {
 	C.sf_write_sync(f.s)
 }
 
@@ -197,15 +199,15 @@ Returns the number of items read. Unless the end of the file was reached during 
 out must be a slice or array of int, int16, int32, float32, or float64.
 
 */
-func (f File) ReadItems(out interface{}) (read int64, err os.Error) {
+func (f *File) ReadItems(out interface{}) (read int64, err os.Error) {
 	t := reflect.TypeOf(out)
 	if t.Kind() != reflect.Array && t.Kind() != reflect.Slice {
 		os.NewError("You need to give me an array!")
 	}
-	
+
 	v := reflect.ValueOf(out)
 	l := v.Len()
-	o := v.Slice(0,l-1)
+	o := v.Slice(0, l-1)
 	var n C.sf_count_t
 	switch t.Elem().Kind() {
 	case reflect.Int16:
@@ -243,42 +245,43 @@ func (f File) ReadItems(out interface{}) (read int64, err os.Error) {
 /*The file read frames functions fill the array pointed to by out with the requested number of frames of data. The array must be large enough to hold the product of frames and the number of channels.
 
 The sf_readf_XXXX functions return the number of frames read. Unless the end of the file was reached during the read, the return value should equal the number of frames requested. Attempts to read beyond the end of the file will not result in an error but will cause the sf_readf_XXXX functions to return less than the number of frames requested or 0 if already at the end of the file.*/
-func (f File) ReadFrames(out interface{}) (read int64, err os.Error) {
+func (f *File) ReadFrames(out interface{}) (read int64, err os.Error) {
 	t := reflect.TypeOf(out)
 	if t.Kind() != reflect.Array && t.Kind() != reflect.Slice {
 		os.NewError("You need to give me an array!")
 	}
-	
+
 	v := reflect.ValueOf(out)
 	l := v.Len()
-	o := v.Slice(0,l-1)
-	frames := l/int(f.Format.Channels)
+	o := v.Slice(0, l-1)
+	frames := l / int(f.Format.Channels)
 	if frames < 1 {
 		err = os.EOF
 		return
 	}
 	var n C.sf_count_t
+	p := unsafe.Pointer(o.Index(0).Addr().Pointer())
 	switch t.Elem().Kind() {
 	case reflect.Int16:
 		fallthrough
 	case reflect.Uint16:
-		n = C.sf_readf_short(f.s, (*C.short)(unsafe.Pointer(o.Index(0).Addr().Pointer())), C.sf_count_t(frames))
+		n = C.sf_readf_short(f.s, (*C.short)(p), C.sf_count_t(frames))
 	case reflect.Int32:
 		fallthrough
 	case reflect.Uint32:
-		n = C.sf_readf_int(f.s, (*C.int)(unsafe.Pointer(o.Index(0).Addr().Pointer())), C.sf_count_t(frames))
+		n = C.sf_readf_int(f.s, (*C.int)(p), C.sf_count_t(frames))
 	case reflect.Float32:
-		n = C.sf_readf_float(f.s, (*C.float)(unsafe.Pointer(o.Index(0).Addr().Pointer())), C.sf_count_t(frames))
+		n = C.sf_readf_float(f.s, (*C.float)(p), C.sf_count_t(frames))
 	case reflect.Float64:
-		n = C.sf_readf_double(f.s, (*C.double)(unsafe.Pointer(o.Index(0).Addr().Pointer())), C.sf_count_t(frames))
+		n = C.sf_readf_double(f.s, (*C.double)(p), C.sf_count_t(frames))
 	case reflect.Int:
 		fallthrough
 	case reflect.Uint:
 		switch t.Bits() {
 		case 32:
-			n = C.sf_readf_int(f.s, (*C.int)(unsafe.Pointer(o.Index(0).Addr().Pointer())), C.sf_count_t(frames))
+			n = C.sf_readf_int(f.s, (*C.int)(p), C.sf_count_t(frames))
 		case 16: // doubtful
-			n = C.sf_readf_short(f.s, (*C.short)(unsafe.Pointer(o.Index(0).Addr().Pointer())), C.sf_count_t(frames))
+			n = C.sf_readf_short(f.s, (*C.short)(p), C.sf_count_t(frames))
 		default:
 			err = os.NewError("Unsupported type in read buffer, needs (u)int16, (u)int32, or float type")
 		}
@@ -292,6 +295,43 @@ func (f File) ReadFrames(out interface{}) (read int64, err os.Error) {
 
 	read = int64(n)
 	if read < 0 {
+		err = sErrorType(C.sf_error(f.s))
+	}
+	return
+}
+
+type StringType C.int
+
+const (
+	Title       StringType = C.SF_STR_TITLE
+	Copyright   StringType = C.SF_STR_COPYRIGHT
+	Software    StringType = C.SF_STR_SOFTWARE
+	Artist      StringType = C.SF_STR_ARTIST
+	Comment     StringType = C.SF_STR_COMMENT
+	Date        StringType = C.SF_STR_DATE
+	Album       StringType = C.SF_STR_ALBUM
+	License     StringType = C.SF_STR_LICENSE
+	Tracknumber StringType = C.SF_STR_TRACKNUMBER
+	Genre       StringType = C.SF_STR_GENRE
+	First       StringType = C.SF_STR_FIRST
+	Last        StringType = C.SF_STR_LAST
+)
+
+//The GetString() function returns the specified string if it exists and a NULL pointer otherwise. In addition to the string ids above, First (== Title) and Last (always the same as the highest numbers string id) are also available to allow iteration over all the available string ids.
+func (f *File) GetString(typ StringType) (out *string) {
+	// although it's not clear from the docs, sf_get_string doesn't require you to free the string that is returned
+	s := C.sf_get_string(f.s, C.int(typ))
+	if s != nil {
+		out = new(string)
+		*out = C.GoString(s)
+	}
+	return
+}
+
+func (f *File) SetString(in string, typ StringType) (err os.Error) {
+	s := C.CString(in)
+	defer C.free(unsafe.Pointer(s))
+	if C.sf_set_string(f.s, C.int(typ), s) != 0 {
 		err = sErrorType(C.sf_error(f.s))
 	}
 	return
