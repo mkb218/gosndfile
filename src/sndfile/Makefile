@@ -9,6 +9,7 @@ GOFILES=\
 
 CGOFILES=\
 	sndfile.go\
-	command.go
+	command.go\
+	raw.go
 
 include $(GOROOT)/src/Make.pkg
