@@ -113,15 +113,7 @@ For both cases, setting normalisation to false means that no scaling will take p
 Returns the previous normalization setting. */
 //needs test
 func (f *File) SetFloatNormalization(norm bool) bool {
-	i := C.SF_FALSE
-	if norm {
-		i = C.SF_TRUE
-	}
-	n := C.sf_command(f.s, C.SFC_SET_NORM_FLOAT, nil, C.int(i))
-	if n == C.SF_TRUE {
-		return true
-	}
-	return false
+	return f.genericBoolBoolCmd(C.SFC_SET_NORM_FLOAT, norm)
 }
 
 /*This command only affects data read from or written to using ReadItems, ReadFrames, WriteItems, or WriteFrames with slices of float64.
@@ -135,31 +127,147 @@ For both cases, setting normalisation to false means that no scaling will take p
 Returns the previous normalization setting. */
 //needs test
 func (f *File) SetDoubleNormalization(norm bool) bool {
-	i := C.SF_FALSE
-	if norm {
-		i = C.SF_TRUE
-	}
-	n := C.sf_command(f.s, C.SFC_SET_NORM_DOUBLE, nil, C.int(i))
-	if n == C.SF_TRUE {
-		return true
-	}
-	return false
+	return f.genericBoolBoolCmd(C.SFC_SET_NORM_DOUBLE, norm)
 }
 
 // Returns the current float32 normalization mode.
 //needs test
 func (f *File) GetFloatNormalization() bool {
-	return (C.sf_command(f.s, C.SFC_GET_NORM_FLOAT, nil, 0) == C.SF_TRUE)
+	return f.genericBoolBoolCmd(C.SFC_GET_NORM_FLOAT, false)
 }
 
 // Returns the current float64 normalization mode.
 //needs test
 func (f *File) GetDoubleNormalization() bool {
-	return (C.sf_command(f.s, C.SFC_GET_NORM_DOUBLE, nil, 0) == C.SF_TRUE)
+	return f.genericBoolBoolCmd(C.SFC_GET_NORM_DOUBLE, false)
 }
 
-// oh god this is boring.
-//needs test, needs doc
-func (f *File) GenericCmd(cmd C.int, data unsafe.Pointer, datasize int) int {
-	return int(C.sf_command(f.s, cmd, data, C.int(datasize)))
+//Set/clear the scale factor when integer (short/int) data is read from a file containing floating point data.
+//needs test
+func (f *File) SetFloatIntScaleRead(scale bool) bool {
+	return f.genericBoolBoolCmd(C.SFC_SET_SCALE_FLOAT_INT_READ, scale)
+}
+
+//Set/clear the scale factor when integer (short/int) data is written to a file as floating point data.
+//needs test
+func (f *File) SetIntFloatScaleWrite(scale bool) bool {
+	return f.genericBoolBoolCmd(C.SFC_SET_SCALE_INT_FLOAT_WRITE, scale)
+}
+
+//Retrieve the number of simple formats supported by libsndfile.
+//needstest
+func GetSimpleFormatCount() int {
+	var o C.int
+	C.sf_command(nil, C.SFC_GET_SIMPLE_FORMAT_COUNT, unsafe.Pointer(&o), C.int(unsafe.Sizeof(o)))
+	return int(o)
+}
+
+//Retrieve information about a simple format.
+//The value of the format argument should be the format number (ie 0 <= format <= count value obtained using GetSimpleFormatCount()).
+// The returned format argument is suitable for use in sndfile.Open()
+//needs test , needs example, needs doc
+func GetSimpleFormat(format int) (oformat int, name string, extension string, ok bool) {
+	var o C.SF_FORMAT_INFO
+	o.format = C.int(format)
+	ok = (0 == C.sf_command(nil, C.SFC_GET_SIMPLE_FORMAT, unsafe.Pointer(&o), C.int(unsafe.Sizeof(o))))
+	oformat = int(o.format)
+	name = C.GoString(o.name)
+	extension = C.GoString(o.extension)
+	return
+}
+
+//When GetFormatInfo() is called, the format argument is examined and if (format & SF_FORMAT_TYPEMASK) is a valid format then the returned strings contain information about the given major type. If (format & SF_FORMAT_TYPEMASK) is FALSE and (format & SF_FORMAT_SUBMASK) is a valid subtype format then the returned strings contain information about the given subtype.
+//needs test , needs example, needs doc
+func GetFormatInfo(format int) (oformat int, name string, extension string, ok bool) {
+	var o C.SF_FORMAT_INFO
+	o.format = C.int(format)
+	ok = (0 == C.sf_command(nil, C.SFC_GET_FORMAT_INFO, unsafe.Pointer(&o), C.int(unsafe.Sizeof(o))))
+	oformat = int(o.format)
+	name = C.GoString(o.name)
+	extension = C.GoString(o.extension)
+	return
+}
+
+//Retrieve the number of major formats supported by libsndfile.
+//needstest
+func GetMajorFormatCount() int {
+	var o C.int
+	C.sf_command(nil, C.SFC_GET_FORMAT_MAJOR_COUNT, unsafe.Pointer(&o), C.int(unsafe.Sizeof(o)))
+	return int(o)
+}
+
+//Retrieve information about a major format type
+//For a more comprehensive example, see the program list_formats.c in the examples/ directory of the libsndfile source code distribution.
+//needs test , needs example, needs doc
+func GetMajorFormatInfo(format int) (oformat int, name string, extension string, ok bool) {
+	var o C.SF_FORMAT_INFO
+	o.format = C.int(format)
+	ok = (0 == C.sf_command(nil, C.SFC_GET_FORMAT_MAJOR, unsafe.Pointer(&o), C.int(unsafe.Sizeof(o))))
+	oformat = int(o.format)
+	name = C.GoString(o.name)
+	extension = C.GoString(o.extension)
+	return
+}
+
+//Retrieve the number of subformats supported by libsndfile.
+//needstest
+func GetSubFormatCount() int {
+	var o C.int
+	C.sf_command(nil, C.SFC_GET_FORMAT_SUBTYPE_COUNT, unsafe.Pointer(&o), C.int(unsafe.Sizeof(o)))
+	return int(o)
+}
+
+//Enumerate the subtypes (this function does not translate a subtype into a string describing that subtype). A typical use case might be retrieving a string description of all subtypes so that a dialog box can be filled in.
+//needs test , needs example, needs doc
+func GetSubFormatInfo(format int) (oformat int, name string, ok bool) {
+	var o C.SF_FORMAT_INFO
+	o.format = C.int(format)
+	ok = (0 == C.sf_command(nil, C.SFC_GET_FORMAT_SUBTYPE, unsafe.Pointer(&o), C.int(unsafe.Sizeof(o))))
+	oformat = int(o.format)
+	name = C.GoString(o.name)
+	return
+}
+
+//By default, WAV and AIFF files which contain floating point data (subtype SF_FORMAT_FLOAT or SF_FORMAT_DOUBLE) have a PEAK chunk. By using this command, the addition of a PEAK chunk can be turned on or off.
+
+//Note : This call must be made before any data is written to the file.
+// needstest
+func (f *File) SetAddPeakChunk(set bool) bool {
+	return f.genericBoolBoolCmd(C.SFC_SET_ADD_PEAK_CHUNK, set)
+}
+
+//The header of an audio file is normally written by libsndfile when the file is closed using sf_close().
+
+//There are however situations where large files are being generated and it would be nice to have valid data in the header before the file is complete. Using this command will update the file header to reflect the amount of data written to the file so far. Other programs opening the file for read (before any more data is written) will then read a valid sound file header.
+//needs test
+func (f *File) UpdateHeaderNow() {
+	C.sf_command(f.s, C.SFC_UPDATE_HEADER_NOW, nil, 0)
+}
+
+//Similar to SFC_UPDATE_HEADER_NOW but updates the header at the end of every call to the sf_write* functions.
+//needstest
+func (f *File) SetUpdateHeaderAuto(set bool) bool {
+	return f.genericBoolBoolCmd(C.SFC_SET_UPDATE_HEADER_AUTO, set)
+}
+
+func (f *File) genericBoolBoolCmd(cmd C.int, i bool) bool {
+	ib := C.SF_FALSE
+	if i { 
+		ib = C.SF_TRUE
+	}
+	
+	n := C.sf_command(f.s, cmd, nil, C.int(ib))
+	return (n == C.SF_TRUE)
+}
+
+// This allows libsndfile experts to use the command interface for commands not currently supported. See http://www.mega-nerd.com/libsndfile/command.html
+// The f argument may be nil in cases where the command does not require a SNDFILE argument.
+// The method's cmd, data, and datasize arguments are used the same way as the correspondingly named arguments for sf_command
+//needs test
+func GenericCmd(f *File, cmd C.int, data unsafe.Pointer, datasize int) int {
+	var s *C.SNDFILE = nil
+	if f != nil {
+		s = f.s
+	}
+	return int(C.sf_command(s, cmd, data, C.int(datasize)))
 }

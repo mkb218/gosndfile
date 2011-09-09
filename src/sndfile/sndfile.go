@@ -43,7 +43,7 @@ type Info struct {
 	Format       int32
 	Sections     int32
 	Seekable     int32
-	Pad_godefs_0 [4]byte
+	pad_godefs_0 [4]byte
 }
 
 // The format field in the above SF_INFO structure is made up of the bit-wise OR of a major format type (values between 0x10000 and 0x08000000), a minor format type (with values less than 0x10000) and an optional endian-ness value. The currently understood formats are listed in sndfile.h as follows and also include bitmasks for separating major and minor file types. Not all combinations of endian-ness and major and minor file types are valid.
