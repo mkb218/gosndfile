@@ -133,6 +133,13 @@ const (
 	SF_FORMAT_ENDMASK  Format = 0x30000000
 )
 
+// Open takes a string as a filename, a mode of type Mode (Read, Write, or ReadWrite), and a pointer to an Info struct.
+
+// When opening a file for read, the format field of the Info struct should be set to zero before calling Open(). The only exception to this is the case of RAW files where the caller has to set the samplerate, channels and format fields to valid values. All other fields of the structure are filled in by the library.
+
+//When opening a file for write, the caller must fill in structure members samplerate, channels, and format.
+
+// returns a pointer to the file and a nil error if successful. In case of error, err will be non-nil.
 func Open(name string, mode Mode, info *Info) (o *File, err os.Error) {
 	o = new(File)
 	c := C.CString(name)
@@ -145,7 +152,10 @@ func Open(name string, mode Mode, info *Info) (o *File, err os.Error) {
 	return
 }
 
-// This probably won't work on windows, but then libsndfile isn't supported on windows!
+// This probably won't work on windows, because go uses handles instead of integer file descriptors on Windows. Unfortunately I have no way to test.
+// The mode and info arguments, and the return values, are the same as for Open().
+// close_desc should be true if you want the library to close the file descriptor when you close the sndfile.File object
+// needs test.
 func OpenFd(fd int, mode Mode, info *Info, close_desc bool) (o *File, err os.Error) {
 	o = new(File)
 	var cd C.int
@@ -163,7 +173,8 @@ func OpenFd(fd int, mode Mode, info *Info, close_desc bool) (o *File, err os.Err
 // not interested in dealing with callbacks from c to go right now kthx, so no sf_open_virtual
 
 // This function allows the caller to check if a set of parameters in the Info struct is valid before calling Open in Write mode.
-// FormatCheck returns true if the parameters are valid and false otherwise. */
+// FormatCheck returns true if the parameters are valid and false otherwise.
+// needs test.
 func FormatCheck(i Info) bool {
 	return C.sf_format_check((*C.SF_INFO)(unsafe.Pointer(&i))) != C.SF_TRUE
 }
@@ -197,6 +208,7 @@ func (f *File) Close() (err os.Error) {
 }
 
 //If the file is opened Write or ReadWrite, call the operating system's function to force the writing of all file cache buffers to disk. If the file is opened Read no action is taken.
+// needs test
 func (f *File) WriteSync() {
 	C.sf_write_sync(f.s)
 }
