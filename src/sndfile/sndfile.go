@@ -43,10 +43,21 @@ type Info struct {
 	Format       int32
 	Sections     int32
 	Seekable     int32
-	pad_godefs_0 [4]byte
 }
 
-// The format field in the above SF_INFO structure is made up of the bit-wise OR of a major format type (values between 0x10000 and 0x08000000), a minor format type (with values less than 0x10000) and an optional endian-ness value. The currently understood formats are listed in sndfile.h as follows and also include bitmasks for separating major and minor file types. Not all combinations of endian-ness and major and minor file types are valid.
+func (i Info) toCinfo() (out *C.SF_INFO) {
+	out = new(C.SF_INFO) // libsndfile makes a copy of this, safe for GC
+	out.frames = C.sf_count_t(i.Frames)
+	out.samplerate = C.int(i.Samplerate)
+	out.channels = C.int(i.Channels)
+	out.format = C.int(i.Format)
+	out.sections = C.int(i.Sections)
+	out.seekable = C.int(i.Seekable)
+	return
+}
+
+
+// The format field in the above Info structure is made up of the bit-wise OR of a major format type (values between 0x10000 and 0x08000000), a minor format type (with values less than 0x10000) and an optional endian-ness value. The currently understood formats are taken from sndfile.h as follows and also include bitmasks for separating major and minor file types. Not all combinations of endian-ness and major and minor file types are valid.
 type Format int32
 
 const (
@@ -126,7 +137,7 @@ func Open(name string, mode Mode, info *Info) (o *File, err os.Error) {
 	o = new(File)
 	c := C.CString(name)
 	defer C.free(unsafe.Pointer(c))
-	o.s = C.sf_open(c, C.int(mode), (*C.SF_INFO)(unsafe.Pointer(info)))
+	o.s = C.sf_open(c, C.int(mode), info.toCinfo())
 	if o.s == nil {
 		err = sErrorType(C.sf_error(o.s))
 	}
@@ -141,7 +152,7 @@ func OpenFd(fd int, mode Mode, info *Info, close_desc bool) (o *File, err os.Err
 	if close_desc {
 		cd = 1
 	}
-	o.s = C.sf_open_fd(C.int(fd), C.int(mode), (*C.SF_INFO)(unsafe.Pointer(info)), cd)
+	o.s = C.sf_open_fd(C.int(fd), C.int(mode), info.toCinfo(), cd)
 	if o.s == nil {
 		err = sErrorType(C.sf_error(o.s))
 	}
