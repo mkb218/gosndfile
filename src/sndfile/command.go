@@ -367,14 +367,14 @@ func goStringFromArr(c []C.char) string {
 
 func broadcastFromC(c *C.SF_BROADCAST_INFO) *BroadcastInfo {
 	bi := new(BroadcastInfo)
-	bi.Description = goStringFromArr(c.description[:])
-	bi.Originator = goStringFromArr(c.originator[:])
-	bi.Origination_date = goStringFromArr(c.origination_date[:])
-	bi.Origination_time = goStringFromArr(c.origination_time[:])
+	bi.Description = C.GoStringN(&c.description[0], C.int(len(c.description[:])))
+	bi.Originator = C.GoStringN(&c.originator[0], C.int(len(c.originator[:])))
+	bi.Origination_date = C.GoStringN(&c.origination_date[0], C.int(len(c.origination_date[:])))
+	bi.Origination_time = C.GoStringN(&c.origination_time[0], C.int(len(c.origination_time[:])))
 	bi.Time_reference_low = uint32(c.time_reference_low)
 	bi.Time_reference_high = uint32(c.time_reference_high)
 	bi.Version = int16(c.version)
-	bi.Umid = goStringFromArr(c.umid[:])
+	bi.Umid = C.GoStringN(&c.umid[0], C.int(len(c.umid[:])))
 	bi.Coding_history_size = uint32(c.coding_history_size)
 	bi.Coding_history = make([]int8, 256)
 	for i, r := range c.coding_history {

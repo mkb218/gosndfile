@@ -6,10 +6,13 @@ include $(GOROOT)/src/Make.inc
 TARG=sndfile
 GOFILES=\
 
+CGO_OFILES=\
+	virtual.o
 
 CGOFILES=\
 	sndfile.go\
 	command.go\
-	raw.go
+	raw.go\
+	virtual.go
 
 include $(GOROOT)/src/Make.pkg
