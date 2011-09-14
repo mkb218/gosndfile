@@ -17,6 +17,7 @@ import (
 type File struct {
 	s      *C.SNDFILE
 	Format Info
+	virtual *virtualIo // really only necessary to keep a reference so GC doesn't eat it
 }
 
 // sErrorType represents a sndfile API error and grabs error description strings from the API.
