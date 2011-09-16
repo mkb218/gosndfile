@@ -9,8 +9,8 @@ import "os"
 
 type VIO_get_filelen func(interface{}) int64
 type VIO_seek func(int64, Whence, interface{}) int64
-type VIO_read func(unsafe.Pointer, int64, interface{}) int64
-type VIO_write func(unsafe.Pointer, int64, interface{}) int64
+type VIO_read func([]byte, interface{}) int64
+type VIO_write func([]byte, interface{}) int64
 type VIO_tell func(interface{}) int64
 
 // Opens a soundfile from a virtual file I/O context which is provided by the caller. This is usually used to interface libsndfile to a stream or buffer based system. Apart from the c and user_data parameters this function behaves like sf_open.
@@ -67,13 +67,15 @@ func gsfSeek (i int64, w Whence, user_data unsafe.Pointer) int64 {
 //export gsfRead
 func gsfRead (ptr unsafe.Pointer, i int64, user_data unsafe.Pointer) int64 {
 	l := (*VirtualIo)(user_data)
-	return l.Read(ptr, i, l.UserData)
+	b := (*[1<<30]byte)(ptr)[0:i]
+	return l.Read(b, l.UserData)
 }
 
 //export gsfWrite
 func gsfWrite(ptr unsafe.Pointer, i int64, user_data unsafe.Pointer) int64 {
 	l := (*VirtualIo)(user_data)
-	return l.Write(ptr, i, l.UserData)
+	b := (*[1<<30]byte)(ptr)[0:i]
+	return l.Write(b, l.UserData)
 }
 
 //export gsfTell

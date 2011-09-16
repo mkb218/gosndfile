@@ -57,6 +57,15 @@ func (i Info) toCinfo() (out *C.SF_INFO) {
 	return
 }
 
+func fromCInfo(i *C.SF_INFO) (out Info) {
+	out.Frames = int64(i.frames)
+	out.Samplerate = int32(i.samplerate)
+	out.Channels = int32(i.channels)
+	out.Format = int32(i.format)
+	out.Sections = int32(i.sections)
+	out.Seekable = int32(i.seekable)
+	return out
+}
 
 // The format field in the above Info structure is made up of the bit-wise OR of a major format type (values between 0x10000 and 0x08000000), a minor format type (with values less than 0x10000) and an optional endian-ness value. The currently understood formats are taken from sndfile.h as follows and also include bitmasks for separating major and minor file types. Not all combinations of endian-ness and major and minor file types are valid.
 type Format int32
@@ -145,10 +154,12 @@ func Open(name string, mode Mode, info *Info) (o *File, err os.Error) {
 	o = new(File)
 	c := C.CString(name)
 	defer C.free(unsafe.Pointer(c))
-	o.s = C.sf_open(c, C.int(mode), info.toCinfo())
+	ci := info.toCinfo()
+	o.s = C.sf_open(c, C.int(mode), ci)
 	if o.s == nil {
 		err = sErrorType(C.sf_error(o.s))
 	}
+	*info = fromCInfo(ci)
 	o.Format = *info
 	return
 }
@@ -163,15 +174,16 @@ func OpenFd(fd int, mode Mode, info *Info, close_desc bool) (o *File, err os.Err
 	if close_desc {
 		cd = 1
 	}
-	o.s = C.sf_open_fd(C.int(fd), C.int(mode), info.toCinfo(), cd)
+	ci := info.toCinfo()
+	o.s = C.sf_open_fd(C.int(fd), C.int(mode), ci, cd)
 	if o.s == nil {
 		err = sErrorType(C.sf_error(o.s))
 	}
+	*info = fromCInfo(ci)
 	o.Format = *info
 	return
 }
 
-// not interested in dealing with callbacks from c to go right now kthx, so no sf_open_virtual
 
 // This function allows the caller to check if a set of parameters in the Info struct is valid before calling Open in Write mode.
 // FormatCheck returns true if the parameters are valid and false otherwise.
