@@ -20,13 +20,13 @@ sf_count_t  gocall_tell        (void *user_data) {
 	return gsfTell(user_data);
 }
 
-SF_VIRTUAL_IO virtualio() {
-	SF_VIRTUAL_IO svi;
-	svi.get_filelen = gocall_get_filelen;
-	svi.seek = gocall_seek;
-	svi.read = gocall_read;
-	svi.write = gocall_write;
-	svi.tell = gocall_tell;
+SF_VIRTUAL_IO* virtualio() {
+	SF_VIRTUAL_IO *svi = malloc(sizeof(SF_VIRTUAL_IO));
+	svi->get_filelen = gocall_get_filelen;
+	svi->seek = gocall_seek;
+	svi->read = gocall_read;
+	svi->write = gocall_write;
+	svi->tell = gocall_tell;
 	return svi;
 }
 	

@@ -3,6 +3,7 @@ package sndfile
 import "fmt"
 import "testing"
 import "os"
+import "reflect"
 
 type testUserData struct {
 	f *os.File
@@ -13,7 +14,7 @@ func getUd(i interface{}) testUserData {
 	ud, ok := i.(testUserData)
 	if !ok {
 		// i can't even guarantee that I can get a t out of it so just die
-		fmt.Fprintf(os.Stderr, "userdata didn't contain a valid struct!")
+		fmt.Fprintf(os.Stderr, "userdata didn't contain a valid struct! %v\n", reflect.TypeOf(i))
 		os.Exit(1)
 	}
 	return ud
@@ -24,7 +25,7 @@ func testGetLength(i interface{}) int64 {
 	s, err := ud.f.Stat()
 	if err != nil {
 		// is this even possible?
-		ud.t.Errorf("couldn't seek for some reason %s", err.String())
+		ud.t.Errorf("couldn't get length for some reason %s", err.String())
 	}
 	return int64(s.Size)
 }
@@ -83,10 +84,20 @@ func TestVirtual(t *testing.T) {
 	}
 	
 	var vi VirtualIo
-	vi.UserData = f
+	vi.UserData = testUserData{f, t}
 	vi.GetLength = testGetLength
 	vi.Seek = testSeek
 	vi.Read = testRead
 	vi.Write = testWrite
 	vi.Tell = testTell
+	
+	var i Info
+	vf, err := OpenVirtual(vi, ReadWrite, &i)
+	if err != nil {
+		t.Fatalf("error from OpenVirtual %v", err)
+	}
+	off, err := vf.Seek(0, Set)
+	if off != 0 || err != nil {
+		t.Errorf("Seek had wrong result %v (expected 0) %v", off, err)
+	}
 }

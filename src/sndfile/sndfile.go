@@ -57,7 +57,7 @@ func (i Info) toCinfo() (out *C.SF_INFO) {
 	return
 }
 
-func fromCInfo(i *C.SF_INFO) (out Info) {
+func fromCinfo(i *C.SF_INFO) (out Info) {
 	out.Frames = int64(i.frames)
 	out.Samplerate = int32(i.samplerate)
 	out.Channels = int32(i.channels)
@@ -159,7 +159,7 @@ func Open(name string, mode Mode, info *Info) (o *File, err os.Error) {
 	if o.s == nil {
 		err = sErrorType(C.sf_error(o.s))
 	}
-	*info = fromCInfo(ci)
+	*info = fromCinfo(ci)
 	o.Format = *info
 	return
 }
@@ -179,7 +179,7 @@ func OpenFd(fd int, mode Mode, info *Info, close_desc bool) (o *File, err os.Err
 	if o.s == nil {
 		err = sErrorType(C.sf_error(o.s))
 	}
-	*info = fromCInfo(ci)
+	*info = fromCinfo(ci)
 	o.Format = *info
 	return
 }
