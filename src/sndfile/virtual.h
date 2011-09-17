@@ -1,7 +1,6 @@
 #ifndef GOSNDFILE_VIRTUAL
 #define GOSNDFILE_VIRTUAL
 
-//#include "_cgo_export.h"
 #include <sndfile.h>
 
 sf_count_t  gocall_get_filelen (void *user_data) ;

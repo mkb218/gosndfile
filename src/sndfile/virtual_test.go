@@ -17,10 +17,12 @@ func getUd(i interface{}) testUserData {
 		fmt.Fprintf(os.Stderr, "userdata didn't contain a valid struct! %v\n", reflect.TypeOf(i))
 		os.Exit(1)
 	}
+	fmt.Printf("getUd %v\n", ud.f)
 	return ud
 }
 
 func testGetLength(i interface{}) int64 {
+	fmt.Println("gogetlength")
 	ud := getUd(i)
 	s, err := ud.f.Stat()
 	if err != nil {
@@ -31,6 +33,7 @@ func testGetLength(i interface{}) int64 {
 }
 
 func testSeek(offset int64, whence Whence, i interface{}) int64 {
+	fmt.Printf("goseek %d %d\n", offset, whence)
 	ud := getUd(i)
 	var w int
 	if whence == Set {
@@ -49,6 +52,7 @@ func testSeek(offset int64, whence Whence, i interface{}) int64 {
 }
 
 func testRead(buf []byte, i interface{}) int64 {
+	fmt.Println("goread")
 	ud := getUd(i)
 	read, err := ud.f.Read(buf)
 	if err != nil {
@@ -58,15 +62,17 @@ func testRead(buf []byte, i interface{}) int64 {
 }
 
 func testWrite(buf []byte, i interface{}) int64 {
+	fmt.Println("gowrite")
 	ud := getUd(i)
 	wrote, err := ud.f.Write(buf)
 	if err != nil {
-		ud.t.Errorf("couldn't write to file %s", err.String())
+		ud.t.Errorf("couldn't write to file %v %d %s", ud.f, wrote, err.String())
 	}
 	return int64(wrote)
 }
 
 func testTell(i interface{}) int64 {
+	fmt.Println("gotell")
 	ud := getUd(i)
 	o, err := ud.f.Seek(0, os.SEEK_CUR)
 	if err != nil {
@@ -77,7 +83,7 @@ func testTell(i interface{}) int64 {
 	
 
 // test virtual i/o by mapping virtual i/o calls to Go i/o calls
-func TestVirtual(t *testing.T) {
+func TestVirtualRead(t *testing.T) {
 	f, err := os.Open("ok.aiff")
 	if err != nil {
 		t.Fatalf("couldn't open input file %s", err.String())
@@ -92,7 +98,7 @@ func TestVirtual(t *testing.T) {
 	vi.Tell = testTell
 	
 	var i Info
-	vf, err := OpenVirtual(vi, ReadWrite, &i)
+	vf, err := OpenVirtual(vi, Read, &i)
 	if err != nil {
 		t.Fatalf("error from OpenVirtual %v", err)
 	}

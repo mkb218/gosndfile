@@ -3,9 +3,9 @@ package sndfile
 // #include <sndfile.h>
 // #include "virtual.h"
 import "C"
+import "runtime"
 import "unsafe"
 import "os"
-//import "fmt"
 
 
 type VIO_get_filelen func(interface{}) int64
@@ -18,6 +18,7 @@ type VIO_tell func(interface{}) int64
 // THIS PART OF THE PACKAGE IS EXPERIMENTAL. Don't use it yet.
 // needs test. lots of them
 func OpenVirtual(v VirtualIo, mode Mode, info *Info) (f *File, err os.Error) {
+	runtime.LockOSThread()
 	c := C.virtualio()
 	var vp virtualIo
 	vp.v = &v
