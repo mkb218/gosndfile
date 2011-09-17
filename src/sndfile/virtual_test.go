@@ -102,8 +102,249 @@ func TestVirtualRead(t *testing.T) {
 	if err != nil {
 		t.Fatalf("error from OpenVirtual %v", err)
 	}
+	if !reflect.DeepEqual(i, goldenInfo()) {
+		t.Errorf("info struct not as expected! %v vs. golden %v", i, goldenInfo())
+	}
 	off, err := vf.Seek(0, Set)
 	if off != 0 || err != nil {
 		t.Errorf("Seek had wrong result %v (expected 0) %v", off, err)
+	}
+}
+
+// test virtual i/o by mapping virtual i/o calls to Go i/o calls
+func TestVirtualWrite(t *testing.T) {
+	f, err := os.Create("funky.aiff")
+	if err != nil {
+		t.Fatalf("couldn't open input file %s", err.String())
+	}
+	
+	var vi VirtualIo
+	vi.UserData = testUserData{f, t}
+	vi.GetLength = testGetLength
+	vi.Seek = testSeek
+	vi.Read = testRead
+	vi.Write = testWrite
+	vi.Tell = testTell
+	
+	var i Info
+	i.Samplerate = 44100
+	i.Channels = 2
+	i.Format = SF_FORMAT_AIFF | SF_FORMAT_FLOAT
+	vf, err := OpenVirtual(vi, Write, &i)
+	if err != nil {
+		t.Fatalf("error from OpenVirtual %v", err)
+	}
+	off, err := vf.Seek(0, Set)
+	if off != 0 || err != nil {
+		t.Errorf("Seek had wrong result %v (expected 0) %v", off, err)
+	}
+	
+	out := []float32{
+		0.5,0.0,
+		0.5,0.0,
+		0.5,0.0,
+		0.5,0.0,
+		0.5,0.0,
+		0.5,0.0,
+		0.5,0.0,
+		0.5,0.0,
+		0.0,0.5,
+		0.0,0.5,
+		0.0,0.5,
+		0.0,0.5,
+		0.0,0.5,
+		0.0,0.5,
+		0.0,0.5,
+		0.0,0.5,
+		0.5,0.0,
+		0.5,0.0,
+		0.5,0.0,
+		0.5,0.0,
+		0.5,0.0,
+		0.5,0.0,
+		0.5,0.0,
+		0.5,0.0,
+		0.0,0.5,
+		0.0,0.5,
+		0.0,0.5,
+		0.0,0.5,
+		0.0,0.5,
+		0.0,0.5,
+		0.0,0.5,
+		0.0,0.5,
+		0.5,0.0,
+		0.5,0.0,
+		0.5,0.0,
+		0.5,0.0,
+		0.5,0.0,
+		0.5,0.0,
+		0.5,0.0,
+		0.5,0.0,
+		0.0,0.5,
+		0.0,0.5,
+		0.0,0.5,
+		0.0,0.5,
+		0.0,0.5,
+		0.0,0.5,
+		0.0,0.5,
+		0.0,0.5,
+		0.5,0.0,
+		0.5,0.0,
+		0.5,0.0,
+		0.5,0.0,
+		0.5,0.0,
+		0.5,0.0,
+		0.5,0.0,
+		0.5,0.0,
+		0.0,0.5,
+		0.0,0.5,
+		0.0,0.5,
+		0.0,0.5,
+		0.0,0.5,
+		0.0,0.5,
+		0.0,0.5,
+		0.0,0.5,
+		0.5,0.0,
+		0.5,0.0,
+		0.5,0.0,
+		0.5,0.0,
+		0.5,0.0,
+		0.5,0.0,
+		0.5,0.0,
+		0.5,0.0,
+		0.0,0.5,
+		0.0,0.5,
+		0.0,0.5,
+		0.0,0.5,
+		0.0,0.5,
+		0.0,0.5,
+		0.0,0.5,
+		0.0,0.5,
+		0.5,0.0,
+		0.5,0.0,
+		0.5,0.0,
+		0.5,0.0,
+		0.5,0.0,
+		0.5,0.0,
+		0.5,0.0,
+		0.5,0.0,
+		0.0,0.5,
+		0.0,0.5,
+		0.0,0.5,
+		0.0,0.5,
+		0.0,0.5,
+		0.0,0.5,
+		0.0,0.5,
+		0.0,0.5,
+		0.5,0.0,
+		0.5,0.0,
+		0.5,0.0,
+		0.5,0.0,
+		0.5,0.0,
+		0.5,0.0,
+		0.0,0.5,
+		0.0,0.5,
+		0.0,0.5,
+		0.0,0.5,
+		0.5,0.0,
+		0.5,0.0,
+		0.5,0.0,
+		0.5,0.0,
+		0.5,0.0,
+		0.5,0.0,
+		0.0,0.5,
+		0.0,0.5,
+		0.0,0.5,
+		0.0,0.5,
+		0.5,0.0,
+		0.5,0.0,
+		0.5,0.0,
+		0.5,0.0,
+		0.5,0.0,
+		0.5,0.0,
+		0.0,0.5,
+		0.0,0.5,
+		0.0,0.5,
+		0.0,0.5,
+		0.5,0.0,
+		0.5,0.0,
+		0.5,0.0,
+		0.5,0.0,
+		0.5,0.0,
+		0.5,0.0,
+		0.0,0.5,
+		0.0,0.5,
+		0.0,0.5,
+		0.0,0.5,
+		0.5,0.0,
+		0.5,0.0,
+		0.5,0.0,
+		0.5,0.0,
+		0.5,0.0,
+		0.5,0.0,
+		0.0,0.5,
+		0.0,0.5,
+		0.0,0.5,
+		0.0,0.5,
+		0.5,0.0,
+		0.5,0.0,
+		0.5,0.0,
+		0.5,0.0,
+		0.5,0.0,
+		0.5,0.0,
+		0.5,0.0,
+		0.5,0.0,
+		0.0,0.5,
+		0.0,0.5,
+		0.0,0.5,
+		0.0,0.5,
+		0.0,0.5,
+		0.0,0.5,
+		0.0,0.5,
+		0.0,0.5,
+		0.5,0.0,
+		0.5,0.0,
+		0.5,0.0,
+		0.5,0.0,
+		0.5,0.0,
+		0.5,0.0,
+		0.5,0.0,
+		0.5,0.0,
+		0.0,0.5,
+		0.0,0.5,
+		0.0,0.5,
+		0.0,0.5,
+		0.0,0.5,
+		0.0,0.5,
+		0.0,0.5,
+		0.0,0.5	}
+	out = append(out, out...)
+	out = append(out, out...)
+	out = append(out, out...)
+	out = append(out, out...)
+	out = append(out, out...)
+	written, err := vf.WriteItems(out)
+	if written != int64(len(out)) {
+		t.Errorf("unexpected written item count %d not %d\n", written, len(out))
+	}
+	err = vf.Close()
+	if err != nil {
+		t.Errorf("virtual close failed %s\n", err)
+	}
+	err = f.Close()
+	if err != nil {
+		t.Errorf("close failed %s\n", err)
+	}
+	var ri Info
+	rf, err := Open("funky.aiff", Read, &ri)
+	if err != nil {
+		t.Fatalf("couldn't open input file %s", err.String())
+	}
+	
+	fmt.Println(ri)
+	fmt.Println(rf)
+	
+	if ri.Frames != int64(len(out)/2) {
+		t.Errorf("length in samples not as expected! %d vs. expected %d", ri.Frames, len(out)/2)
 	}
 }

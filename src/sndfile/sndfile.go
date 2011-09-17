@@ -41,7 +41,7 @@ type Info struct {
 	Frames       int64
 	Samplerate   int32
 	Channels     int32
-	Format       int32
+	Format       Format
 	Sections     int32
 	Seekable     int32
 }
@@ -61,7 +61,7 @@ func fromCinfo(i *C.SF_INFO) (out Info) {
 	out.Frames = int64(i.frames)
 	out.Samplerate = int32(i.samplerate)
 	out.Channels = int32(i.channels)
-	out.Format = int32(i.format)
+	out.Format = Format(i.format)
 	out.Sections = int32(i.sections)
 	out.Seekable = int32(i.seekable)
 	return out

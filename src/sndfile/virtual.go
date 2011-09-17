@@ -3,6 +3,7 @@ package sndfile
 // #include <sndfile.h>
 // #include "virtual.h"
 import "C"
+//import "fmt"
 import "runtime"
 import "unsafe"
 import "os"
@@ -29,6 +30,7 @@ func OpenVirtual(v VirtualIo, mode Mode, info *Info) (f *File, err os.Error) {
 	if f.s != nil {
 		f.virtual = &vp
 		f.Format = fromCinfo(ci)
+		*info = f.Format
 	} else {
 		err = sErrorType(C.sf_error(nil))
 	}
