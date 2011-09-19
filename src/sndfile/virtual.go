@@ -17,7 +17,6 @@ type VIO_tell func(interface{}) int64
 
 // Opens a soundfile from a virtual file I/O context which is provided by the caller. This is usually used to interface libsndfile to a stream or buffer based system. Apart from the c and user_data parameters this function behaves like sf_open.
 // THIS PART OF THE PACKAGE IS EXPERIMENTAL. Don't use it yet.
-// needs test. lots of them
 func OpenVirtual(v VirtualIo, mode Mode, info *Info) (f *File, err os.Error) {
 	runtime.LockOSThread()
 	c := C.virtualio()

@@ -23,21 +23,20 @@ func GetLibVersion() (s string, err os.Error) {
 }
 
 // Retrieve the log buffer generated when opening a file as a string. This log buffer can often contain a good reason for why libsndfile failed to open a particular file.
-//needs test
 func (f *File) GetLogInfo() (s string, err os.Error) {
 	l := C.sf_command(f.s, C.SFC_GET_LOG_INFO, nil, 0)
 	c := make([]byte, l)
-	m := C.sf_command(f.s, C.SFC_GET_LOG_INFO, unsafe.Pointer(&c[0]), l)
+	_ = C.sf_command(f.s, C.SFC_GET_LOG_INFO, unsafe.Pointer(&c[0]), l)
 
-	if m != l {
-		err = os.NewError(fmt.Sprintf("GetLogInfo: expected %d bytes in string, recv'd %d", l, m))
-	}
+// not an err
+	// if m != l {
+	// 	err = os.NewError(fmt.Sprintf("GetLogInfo: expected %d bytes in string, recv'd %d", l, m))
+	// }
 	s = string(c)
 	return
 }
 
 // Retrieve the measured maximum signal value. This involves reading through the whole file which can be slow on large files.
-//needs test
 func (f *File) CalcSignalMax() (ret float64, err os.Error) {
 	e := C.sf_command(f.s, C.SFC_CALC_SIGNAL_MAX, unsafe.Pointer(&ret), 8)
 	if e != 0 {
@@ -47,7 +46,6 @@ func (f *File) CalcSignalMax() (ret float64, err os.Error) {
 }
 
 // Retrieve the measured normalised maximum signal value. This involves reading through the whole file which can be slow on large files.
-//needs test
 func (f *File) CalcNormSignalMax() (ret float64, err os.Error) {
 	e := C.sf_command(f.s, C.SFC_CALC_NORM_SIGNAL_MAX, unsafe.Pointer(&ret), 8)
 	if e != 0 {
@@ -57,7 +55,6 @@ func (f *File) CalcNormSignalMax() (ret float64, err os.Error) {
 }
 
 //Calculate the peak value (ie a single number) for each channel. This involves reading through the whole file which can be slow on large files.
-//needs test
 func (f *File) CalcMaxAllChannels() (ret []float64, err os.Error) {
 	c := f.Format.Channels
 	ret = make([]float64, c)
@@ -69,7 +66,6 @@ func (f *File) CalcMaxAllChannels() (ret []float64, err os.Error) {
 }
 
 //Calculate the normalised peak for each channel. This involves reading through the whole file which can be slow on large files.
-//needs test
 func (f *File) CalcNormMaxAllChannels() (ret []float64, err os.Error) {
 	c := f.Format.Channels
 	ret = make([]float64, c)
@@ -81,7 +77,6 @@ func (f *File) CalcNormMaxAllChannels() (ret []float64, err os.Error) {
 }
 
 //Retrieve the peak value for the file as stored in the file header.
-//needs test
 func (f *File) GetSignalMax() (ret float64, ok bool) {
 	r := C.sf_command(f.s, C.SFC_GET_SIGNAL_MAX, unsafe.Pointer(&ret), 8)
 	if r == C.SF_TRUE {
@@ -91,7 +86,6 @@ func (f *File) GetSignalMax() (ret float64, ok bool) {
 }
 
 //Retrieve the peak value for the file as stored in the file header.
-//needs test
 func (f *File) GetMaxAllChannels() (ret []float64, ok bool) {
 	c := f.Format.Channels
 	ret = make([]float64, c)
@@ -155,7 +149,6 @@ func (f *File) SetIntFloatScaleWrite(scale bool) bool {
 }
 
 //Retrieve the number of simple formats supported by libsndfile.
-//needstest
 func GetSimpleFormatCount() int {
 	var o C.int
 	C.sf_command(nil, C.SFC_GET_SIMPLE_FORMAT_COUNT, unsafe.Pointer(&o), C.int(unsafe.Sizeof(o)))
@@ -165,7 +158,7 @@ func GetSimpleFormatCount() int {
 //Retrieve information about a simple format.
 //The value of the format argument should be the format number (ie 0 <= format <= count value obtained using GetSimpleFormatCount()).
 // The returned format argument is suitable for use in sndfile.Open()
-//needs test , needs example, needs doc
+//needs example
 func GetSimpleFormat(format int) (oformat int, name string, extension string, ok bool) {
 	var o C.SF_FORMAT_INFO
 	o.format = C.int(format)
@@ -177,7 +170,7 @@ func GetSimpleFormat(format int) (oformat int, name string, extension string, ok
 }
 
 //When GetFormatInfo() is called, the format argument is examined and if (format & SF_FORMAT_TYPEMASK) is a valid format then the returned strings contain information about the given major type. If (format & SF_FORMAT_TYPEMASK) is FALSE and (format & SF_FORMAT_SUBMASK) is a valid subtype format then the returned strings contain information about the given subtype.
-//needs test , needs example, needs doc
+//needs example, test
 func GetFormatInfo(format int) (oformat int, name string, extension string, ok bool) {
 	var o C.SF_FORMAT_INFO
 	o.format = C.int(format)

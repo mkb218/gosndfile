@@ -1,0 +1,8 @@
+6.out
+_obj
+_test
+*.6
+*.o
+_testmain.go
+_cgo_export.h
+funky.aiff
