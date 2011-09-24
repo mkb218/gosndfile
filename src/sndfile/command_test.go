@@ -1,6 +1,7 @@
 package sndfile
 
 import "os"
+import "reflect"
 import "testing"
 import "fmt"
 import "strings"
@@ -183,7 +184,7 @@ func TestMax(t *testing.T) {
 	var i Info
 	i.Samplerate = 44100
 	i.Channels = 4
-	i.Format = SF_FORMAT_AIFF|SF_FORMAT_PCM_24
+	i.Format = SF_FORMAT_AIFF|SF_FORMAT_PCM_16
 	
 	f, err := Open("addpeakchunk1.aiff", Write, &i)
 	if err != nil {
@@ -191,7 +192,7 @@ func TestMax(t *testing.T) {
 	}
 	
 	f.SetAddPeakChunk(false)
-	err = f.WriteItems([]int32{1,2,1,2,-1,-2,-1,-2,2,4,2,4,-2,-4,-2,-4})
+	_, err = f.WriteItems([]int16{1,2,3,4,5,6,7,8,1,2,3,4,5,6,7,8,1,2,3,4,5,6,7,8,1,2,3,4,5,6,7,8})
 	if err != nil {
 		t.Error("write err:",err)
 	}
@@ -203,8 +204,86 @@ func TestMax(t *testing.T) {
 	}
 	
 	// calc signals
+	r, err := f.CalcSignalMax()
+	if err != nil {
+		t.Fatal("couldn't calculate signal max",err)
+	}
+	if r != 8.0 {
+		t.Errorf("Signal max was %v\n", r)
+	}
+	
+	r, err = f.CalcNormSignalMax()
+	if err != nil {
+		t.Fatal("couldn't calculate signal max",err)
+	}
+	if r != float64(8)/float64(0x8000) {
+		t.Errorf("Signal max was %v not %v\n", r, float64(8)/float64(0x7fff))
+	}
+	
+	ra, err := f.CalcMaxAllChannels()
+	if err != nil {
+		t.Fatal("couldn't calculate signal max",err)
+	}
+	if !reflect.DeepEqual(ra,[]float64{5.0,6.0,7.0,8.0}) {
+		t.Errorf("Signal max was %v\n", ra)
+	}
+	
+	ra, err = f.CalcNormMaxAllChannels()
+	if err != nil {
+		t.Fatal("couldn't calculate signal max",err)
+	}
+	if !reflect.DeepEqual(ra,[]float64{5.0/float64(0x8000),6.0/float64(0x8000),7.0/float64(0x8000),8.0/float64(0x8000)}) {
+		t.Errorf("Signal max was %v\n", ra)
+	}
+	
 	// make sure peak chunk returns false
+	
+	_, ok := f.GetSignalMax()
+	if ok {
+		t.Error("expected no peak chunk in file")
+	}
+	
+	_, ok = f.GetMaxAllChannels()
+	if ok {
+		t.Error("expected no peak chunk in file")
+	}
+
 	f.Close()
 	
+	i.Format = SF_FORMAT_AIFF|SF_FORMAT_DOUBLE
 	// repeat for peak chunk, making sure peak chunk returns same value
+	f, err = Open("addpeakchunk1.aiff", Write, &i)
+	if err != nil {
+		t.Fatalf("couldn't open file %v", err)
+	}
+	
+	f.SetAddPeakChunk(true)
+	_, err = f.WriteItems([]int16{1,2,3,4,5,6,7,8,1,2,3,4,5,6,7,8,1,2,3,4,5,6,7,8,1,2,3,4,5,6,7,8})
+	if err != nil {
+		t.Error("write err:",err)
+	}
+	f.Close()
+
+	f, err = Open("addpeakchunk1.aiff", Read, &i)
+	if err != nil {
+		t.Fatalf("couldn't open file %v", err)
+	}
+	
+	// make sure peak chunk returns true
+	
+	r, ok = f.GetSignalMax()
+	if !ok {
+		t.Error("expected peak chunk in file")
+	}
+	if r != 8.0 { 
+		t.Errorf("unexpected peak value %v", r)
+	}	
+	ra, ok = f.GetMaxAllChannels()
+	if !ok {
+		t.Error("expected peak chunk in file")
+	}
+	if !reflect.DeepEqual(ra,[]float64{5.0,6.0,7.0,8.0}) {
+		t.Errorf("Signal max was %v\n", ra)
+	}
+
 }
