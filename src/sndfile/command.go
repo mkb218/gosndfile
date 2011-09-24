@@ -182,7 +182,6 @@ func GetFormatInfo(format int) (oformat int, name string, extension string, ok b
 }
 
 //Retrieve the number of major formats supported by libsndfile.
-//needstest
 func GetMajorFormatCount() int {
 	var o C.int
 	C.sf_command(nil, C.SFC_GET_FORMAT_MAJOR_COUNT, unsafe.Pointer(&o), C.int(unsafe.Sizeof(o)))
@@ -191,7 +190,6 @@ func GetMajorFormatCount() int {
 
 //Retrieve information about a major format type
 //For a more comprehensive example, see the program list_formats.c in the examples/ directory of the libsndfile source code distribution.
-//needs test , needs example, needs doc
 func GetMajorFormatInfo(format int) (oformat int, name string, extension string, ok bool) {
 	var o C.SF_FORMAT_INFO
 	o.format = C.int(format)
@@ -203,7 +201,6 @@ func GetMajorFormatInfo(format int) (oformat int, name string, extension string,
 }
 
 //Retrieve the number of subformats supported by libsndfile.
-//needstest
 func GetSubFormatCount() int {
 	var o C.int
 	C.sf_command(nil, C.SFC_GET_FORMAT_SUBTYPE_COUNT, unsafe.Pointer(&o), C.int(unsafe.Sizeof(o)))
@@ -211,7 +208,6 @@ func GetSubFormatCount() int {
 }
 
 //Enumerate the subtypes (this function does not translate a subtype into a string describing that subtype). A typical use case might be retrieving a string description of all subtypes so that a dialog box can be filled in.
-//needs test , needs example, needs doc
 func GetSubFormatInfo(format int) (oformat int, name string, ok bool) {
 	var o C.SF_FORMAT_INFO
 	o.format = C.int(format)
@@ -244,6 +240,7 @@ func (f *File) SetUpdateHeaderAuto(set bool) bool {
 }
 
 // Truncates a file to /count/ frames.  After this command, both the read and the write pointer will be at the new end of the file. This command will fail (returning non-zero) if the requested truncate position is beyond the end of the file.
+// needs test
 func (f *File) Truncate(count int64) (err os.Error) {
 	r := C.sf_command(f.s, C.SFC_FILE_TRUNCATE, unsafe.Pointer(&count), 8)
 	
@@ -280,7 +277,7 @@ func (f *File) SetClipping(clip bool) bool {
 	return f.genericBoolBoolCmd(C.SFC_SET_CLIPPING, clip)
 }
 
-//Is automatic clipping when doing floating point to integer conversion.on?
+//Is automatic clipping when doing floating point to integer conversion on?
 // needstest
 func (f *File) GetClipping(clip bool) bool {
 	return f.genericBoolBoolCmd(C.SFC_GET_CLIPPING, false)

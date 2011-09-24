@@ -187,9 +187,8 @@ func OpenFd(fd int, mode Mode, info *Info, close_desc bool) (o *File, err os.Err
 
 // This function allows the caller to check if a set of parameters in the Info struct is valid before calling Open in Write mode.
 // FormatCheck returns true if the parameters are valid and false otherwise.
-// needs test.
 func FormatCheck(i Info) bool {
-	return C.sf_format_check((*C.SF_INFO)(unsafe.Pointer(&i))) != C.SF_TRUE
+	return (C.sf_format_check((*C.SF_INFO)(unsafe.Pointer(&i))) == C.SF_TRUE)
 }
 
 // Whence args for Seek()
