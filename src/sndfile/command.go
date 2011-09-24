@@ -26,12 +26,11 @@ func GetLibVersion() (s string, err os.Error) {
 func (f *File) GetLogInfo() (s string, err os.Error) {
 	l := C.sf_command(f.s, C.SFC_GET_LOG_INFO, nil, 0)
 	c := make([]byte, l)
-	_ = C.sf_command(f.s, C.SFC_GET_LOG_INFO, unsafe.Pointer(&c[0]), l)
+	m := C.sf_command(f.s, C.SFC_GET_LOG_INFO, unsafe.Pointer(&c[0]), l)
 
-// not an err
-	// if m != l {
-	// 	err = os.NewError(fmt.Sprintf("GetLogInfo: expected %d bytes in string, recv'd %d", l, m))
-	// }
+	if m != l {
+		c = c[0:m]
+	}
 	s = string(c)
 	return
 }
@@ -328,7 +327,6 @@ func (f *File) SetVbrQuality(q float64) (err os.Error) {
 //Determine if raw data read using sf_read_raw needs to be end swapped on the host CPU.
 
 //For instance, will return true on when reading WAV containing SF_FORMAT_PCM_16 data on a big endian machine and false on a little endian machine.
-//needstest
 func (f *File) RawNeedsEndianSwap() bool {
 	return f.genericBoolBoolCmd(C.SFC_RAW_DATA_NEEDS_ENDSWAP, false)
 }

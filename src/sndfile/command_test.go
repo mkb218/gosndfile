@@ -25,8 +25,6 @@ func TestGetLogInfo(t *testing.T) {
 	}
 }
 
-
-
 func TestFileCommands(t *testing.T) {
 	var i Info
 	f, err := Open("funky.aiff", ReadWrite, &i)
@@ -132,3 +130,11 @@ func TestRawSwap(t *testing.T) {
 	}
 }
 
+func TestGenericCmd(t *testing.T) {
+	i := GenericCmd(nil, 0x1000, nil, 0)
+	c := make([]byte, i)
+	GenericCmd(nil, 0x1000, unsafe.Pointer(&c[0]), i)
+	if !strings.HasPrefix(string(c), "libsndfile") {
+		t.Errorf("version string \"%s\" had unexpected prefix", string(c))
+	}	
+}
