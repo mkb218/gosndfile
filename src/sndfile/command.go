@@ -219,7 +219,6 @@ func GetSubFormatInfo(format int) (oformat int, name string, ok bool) {
 //By default, WAV and AIFF files which contain floating point data (subtype SF_FORMAT_FLOAT or SF_FORMAT_DOUBLE) have a PEAK chunk. By using this command, the addition of a PEAK chunk can be turned on or off.
 
 //Note : This call must be made before any data is written to the file.
-// needstest
 func (f *File) SetAddPeakChunk(set bool) bool {
 	return f.genericBoolBoolCmd(C.SFC_SET_ADD_PEAK_CHUNK, set)
 }

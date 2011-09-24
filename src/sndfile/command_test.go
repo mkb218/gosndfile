@@ -71,6 +71,9 @@ func TestFileCommands(t *testing.T) {
 	if !ok {
 		t.Error("got unexpected failure from GetMaxAllChannels with vals", maxarr)
 	}
+	
+	f.Close()
+	
 }
 
 func TestFormats(t *testing.T) {
@@ -129,6 +132,7 @@ func TestRawSwap(t *testing.T) {
 	} else if !isLittleEndian() && !f.RawNeedsEndianSwap() {
 		t.Errorf("little endian file and big endian machine should report needing swap, but doesn't!")
 	}
+	f.Close()
 }
 
 func TestGenericCmd(t *testing.T) {
@@ -171,4 +175,36 @@ func TestTruncate(t *testing.T) {
 	if err != nil {
 		t.Errorf("error! %v", err)
 	}
+	f.Close()
+}
+
+func TestMax(t *testing.T) {
+	// open file with no peak chunk
+	var i Info
+	i.Samplerate = 44100
+	i.Channels = 4
+	i.Format = SF_FORMAT_AIFF|SF_FORMAT_PCM_24
+	
+	f, err := Open("addpeakchunk1.aiff", Write, &i)
+	if err != nil {
+		t.Fatalf("couldn't open file %v", err)
+	}
+	
+	f.SetAddPeakChunk(false)
+	err = f.WriteItems([]int32{1,2,1,2,-1,-2,-1,-2,2,4,2,4,-2,-4,-2,-4})
+	if err != nil {
+		t.Error("write err:",err)
+	}
+	f.Close()
+
+	f, err = Open("addpeakchunk1.aiff", Read, &i)
+	if err != nil {
+		t.Fatalf("couldn't open file %v", err)
+	}
+	
+	// calc signals
+	// make sure peak chunk returns false
+	f.Close()
+	
+	// repeat for peak chunk, making sure peak chunk returns same value
 }
