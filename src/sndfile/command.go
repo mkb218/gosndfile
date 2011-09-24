@@ -239,7 +239,6 @@ func (f *File) SetUpdateHeaderAuto(set bool) bool {
 }
 
 // Truncates a file to /count/ frames.  After this command, both the read and the write pointer will be at the new end of the file. This command will fail (returning non-zero) if the requested truncate position is beyond the end of the file.
-// needs test
 func (f *File) Truncate(count int64) (err os.Error) {
 	r := C.sf_command(f.s, C.SFC_FILE_TRUNCATE, unsafe.Pointer(&count), 8)
 	
@@ -525,7 +524,6 @@ func (f *File) SetInstrument(i *Instrument) bool {
 // This allows libsndfile experts to use the command interface for commands not currently supported. See http://www.mega-nerd.com/libsndfile/command.html
 // The f argument may be nil in cases where the command does not require a SNDFILE argument.
 // The method's cmd, data, and datasize arguments are used the same way as the correspondingly named arguments for sf_command
-//needs test
 func GenericCmd(f *File, cmd C.int, data unsafe.Pointer, datasize int) int {
 	var s *C.SNDFILE = nil
 	if f != nil {

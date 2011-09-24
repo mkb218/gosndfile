@@ -15,6 +15,6 @@ CGOFILES=\
 	raw.go\
 	virtual.go
 
-CLEANFILES+=leout.wav
+CLEANFILES+=leout.wav truncout.aiff
 
 include $(GOROOT)/src/Make.pkg

@@ -1,5 +1,6 @@
 package sndfile
 
+import "os"
 import "testing"
 import "fmt"
 import "strings"
@@ -137,4 +138,37 @@ func TestGenericCmd(t *testing.T) {
 	if !strings.HasPrefix(string(c), "libsndfile") {
 		t.Errorf("version string \"%s\" had unexpected prefix", string(c))
 	}	
+}
+
+func TestTruncate(t *testing.T) {
+	// first write 100 samples to a file
+	var i Info
+	i.Samplerate = 44100
+	i.Channels = 1
+	i.Format = SF_FORMAT_AIFF|SF_FORMAT_PCM_24
+	os.Remove("truncout.aiff")
+	f, err := Open("truncout.aiff", ReadWrite, &i)
+	if err != nil {
+		t.Fatalf("couldn't open file for output! %v", err)
+	}
+	
+	var junk [100]int32
+	written, err := f.WriteItems(junk[0:100])
+	if written != 100 {
+		t.Errorf("wrong written count %d", written)
+	}
+	
+	f.WriteSync()
+	
+	f.Truncate(20)
+
+	f.WriteSync()
+	
+	seek, err := f.Seek(0, Current)
+	if seek != 20 {
+		t.Errorf("wrong seek %v", seek)
+	}
+	if err != nil {
+		t.Errorf("error! %v", err)
+	}
 }
