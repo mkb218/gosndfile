@@ -113,7 +113,7 @@ func TestVirtualRead(t *testing.T) {
 
 // test virtual i/o by mapping virtual i/o calls to Go i/o calls
 func TestVirtualWrite(t *testing.T) {
-	f, err := os.Create("funky.aiff")
+	f, err := os.Create("funky2.aiff")
 	if err != nil {
 		t.Fatalf("couldn't open input file %s", err.String())
 	}

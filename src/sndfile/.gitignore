@@ -5,7 +5,6 @@ _test
 *.o
 _testmain.go
 _cgo_export.h
-funky.aiff
 norm.aiff
 addpeakchunk1.aiff
 leout.wav
