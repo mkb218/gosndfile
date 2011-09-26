@@ -1,6 +1,7 @@
 package sndfile
 
 import "os"
+import "math"
 import "reflect"
 import "testing"
 import "fmt"
@@ -286,4 +287,123 @@ func TestMax(t *testing.T) {
 		t.Errorf("Signal max was %v\n", ra)
 	}
 
+}
+
+func TestNormalization(t *testing.T) {
+	var i Info
+	i.Format = SF_FORMAT_AIFF|SF_FORMAT_PCM_16
+	i.Channels = 1
+	i.Samplerate = 44100
+	f, err := Open("norm.aiff", Write, &i)
+	if err != nil {
+		t.Fatal("couldn't open write file", err)
+	}
+	
+	// set write normalization on
+	f.SetDoubleNormalization(true)
+	f.SetFloatNormalization(true)
+	_, err = f.WriteItems([]float64{-1,0,1,0,-1,0,1,0,-1,0,1,0,-1,0,1,0})
+	if err != nil {
+		t.Fatal("couldn't write to file", err)
+	}
+	_, err = f.WriteItems([]float32{-1,0,1,0,-1,0,1,0,-1,0,1,0,-1,0,1,0})
+	if err != nil {
+		t.Fatal("couldn't write to file", err)
+	}
+
+	// set write normalization off
+	f.SetDoubleNormalization(false)
+	f.SetFloatNormalization(false)
+	_, err = f.WriteItems([]float64{-1,2,-3,4,-5,6,-7,8,-9,10,-11,12,-13,14,-15,16})
+	if err != nil {
+		t.Fatal("couldn't write to file", err)
+	}
+	_, err = f.WriteItems([]float32{-1,2,-3,4,-5,6,-7,8,-9,10,-11,12,-13,14,-15,16})
+	if err != nil {
+		t.Fatal("couldn't write to file", err)
+	}
+	
+	f.Close()
+	
+	f, err = Open("norm.aiff", Read, &i)
+	f.SetDoubleNormalization(false)
+	f.SetFloatNormalization(false)
+	f32 := make([]float32, 16)
+	f64 := make([]float64, 16)
+	
+	f.ReadItems(f64)
+	if !reflect.DeepEqual([]float64{-32767,0,32767,0,-32767,0,32767,0,-32767,0,32767,0,-32767,0,32767,0}, f64) {
+		t.Errorf("read badness %v", f64)
+	}
+	f.ReadItems(f32)
+	if !reflect.DeepEqual([]float32{-32767,0,32767,0,-32767,0,32767,0,-32767,0,32767,0,-32767,0,32767,0}, f32) {
+		t.Errorf("read badness %v", f32)
+	}
+	f.ReadItems(f64)
+	if !reflect.DeepEqual([]float64{-1,2,-3,4,-5,6,-7,8,-9,10,-11,12,-13,14,-15,16}, f64) {
+		t.Errorf("read badness %v", f64)
+	}
+	f.ReadItems(f32)
+	if !reflect.DeepEqual([]float32{-1,2,-3,4,-5,6,-7,8,-9,10,-11,12,-13,14,-15,16}, f32) {
+		t.Errorf("read badness %v", f32)
+	}
+	
+	f.Seek(0, Set)
+	f.SetDoubleNormalization(true)
+	f.SetFloatNormalization(true)
+	
+	n, err := f.ReadItems(f64)
+	if err != nil || n != 16 {
+		t.Fatal("bad read", err, n)
+	}
+	if !floatEqual([]float64{-float64(32767)/float64(32768),0,float64(32767)/float64(32768),0,-float64(32767)/float64(32768),0,float64(32767)/float64(32768),0,-float64(32767)/float64(32768),0,float64(32767)/float64(32768),0,-float64(32767)/float64(32768),0,float64(32767)/float64(32768),0}, f64) {
+		t.Errorf("read badness %v", f64)
+	}
+	f.ReadItems(f32)
+	if !floatEqual([]float32{-float32(32767)/float32(32768),0,float32(32767)/float32(32768),0,-float32(32767)/float32(32768),0,float32(32767)/float32(32768),0,-float32(32767)/float32(32768),0,float32(32767)/float32(32768),0,-float32(32767)/float32(32768),0,float32(32767)/float32(32768),0}, f32) {
+		t.Errorf("read badness %v", f32)
+	}
+	f.SetDoubleNormalization(false)
+	f.SetFloatNormalization(false)
+	f.ReadItems(f64)
+	if !reflect.DeepEqual([]float64{-1,2,-3,4,-5,6,-7,8,-9,10,-11,12,-13,14,-15,16}, f64) {
+		t.Errorf("read badness %v", f64)
+	}
+	f.ReadItems(f32)
+	if !reflect.DeepEqual([]float32{-1,2,-3,4,-5,6,-7,8,-9,10,-11,12,-13,14,-15,16}, f32) {
+		t.Errorf("read badness %v", f32)
+	}
+	
+}
+
+func floatEqual(f1, f2 interface{}) bool {
+	// assume []float<size>
+	switch t := f1.(type) {
+	case []float64:
+		f1v := f1.([]float64)
+		f2v := f2.([]float64)
+		if len(f1v) != len(f2v) {
+			return false
+		}
+		for i, f1c := range f1v {
+			if math.Fabs(f1c - f2v[i]) > math.SmallestNonzeroFloat64 {
+				fmt.Println(f1, f2v, math.Fabs(f1c - f2v[i]), math.SmallestNonzeroFloat64)
+				return false
+			}
+		}
+	case []float32:
+		f1v := f1.([]float32)
+		f2v := f2.([]float32)
+		if len(f1v) != len(f2v) {
+			return false
+		}
+		for i, f1c := range f1v {
+			if math.Fabs(float64(f1c - f2v[i])) > math.SmallestNonzeroFloat32 {
+				return false
+			}
+		}
+	default:
+		return false
+	}
+	return true
 }
