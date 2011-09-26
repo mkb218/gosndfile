@@ -363,8 +363,19 @@ func TestNormalization(t *testing.T) {
 	if !floatEqual([]float32{-float32(32767)/float32(32768),0,float32(32767)/float32(32768),0,-float32(32767)/float32(32768),0,float32(32767)/float32(32768),0,-float32(32767)/float32(32768),0,float32(32767)/float32(32768),0,-float32(32767)/float32(32768),0,float32(32767)/float32(32768),0}, f32) {
 		t.Errorf("read badness %v", f32)
 	}
-	f.SetDoubleNormalization(false)
+	ok := f.SetDoubleNormalization(false)
+	if !ok {
+		t.Error("expected previous norm mode to be true, was false")
+	}
 	f.SetFloatNormalization(false)
+	ok = f.GetDoubleNormalization()
+	if ok {
+		t.Error("expected norm mode to be false, was true")
+	}
+	ok = f.GetFloatNormalization()
+	if ok {
+		t.Error("expected float norm mode to be false, was true")
+	}
 	f.ReadItems(f64)
 	if !reflect.DeepEqual([]float64{-1,2,-3,4,-5,6,-7,8,-9,10,-11,12,-13,14,-15,16}, f64) {
 		t.Errorf("read badness %v", f64)

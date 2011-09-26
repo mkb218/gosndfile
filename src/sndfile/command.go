@@ -104,7 +104,6 @@ For write operations, setting normalisation to true means than all data supplied
 For both cases, setting normalisation to false means that no scaling will take place.
 
 Returns the previous normalization setting. */
-//needs test
 func (f *File) SetFloatNormalization(norm bool) bool {
 	return f.genericBoolBoolCmd(C.SFC_SET_NORM_FLOAT, norm)
 }
@@ -118,19 +117,16 @@ For write operations, setting normalisation to true means than all data supplied
 For both cases, setting normalisation to false means that no scaling will take place.
 
 Returns the previous normalization setting. */
-//needs test
 func (f *File) SetDoubleNormalization(norm bool) bool {
 	return f.genericBoolBoolCmd(C.SFC_SET_NORM_DOUBLE, norm)
 }
 
 // Returns the current float32 normalization mode.
-//needs test
 func (f *File) GetFloatNormalization() bool {
 	return f.genericBoolBoolCmd(C.SFC_GET_NORM_FLOAT, false)
 }
 
 // Returns the current float64 normalization mode.
-//needs test
 func (f *File) GetDoubleNormalization() bool {
 	return f.genericBoolBoolCmd(C.SFC_GET_NORM_DOUBLE, false)
 }
