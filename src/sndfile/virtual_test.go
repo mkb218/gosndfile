@@ -84,7 +84,7 @@ func testTell(i interface{}) int64 {
 
 // test virtual i/o by mapping virtual i/o calls to Go i/o calls
 func TestVirtualRead(t *testing.T) {
-	f, err := os.Open("ok.aiff")
+	f, err := os.Open("test/ok.aiff")
 	if err != nil {
 		t.Fatalf("couldn't open input file %s", err.String())
 	}
@@ -113,9 +113,9 @@ func TestVirtualRead(t *testing.T) {
 
 // test virtual i/o by mapping virtual i/o calls to Go i/o calls
 func TestVirtualWrite(t *testing.T) {
-	f, err := os.Create("funky2.aiff")
+	f, err := os.Create("test/funky2.aiff")
 	if err != nil {
-		t.Fatalf("couldn't open input file %s", err.String())
+		t.Fatalf("couldn't open input file test/funky2.aiff %s", err.String())
 	}
 	
 	var vi VirtualIo
@@ -336,7 +336,7 @@ func TestVirtualWrite(t *testing.T) {
 		t.Errorf("close failed %s\n", err)
 	}
 	var ri Info
-	_, err = Open("funky.aiff", Read, &ri)
+	_, err = Open("test/funky.aiff", Read, &ri)
 	if err != nil {
 		t.Fatalf("couldn't open input file %s", err.String())
 	}

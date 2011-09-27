@@ -30,7 +30,7 @@ func goldenShortFramesSeekInput() []int16 {
 
 func TestReadShortItems(t *testing.T) {
 	var i Info
-	f, e := Open("ok.aiff", Read, &i)
+	f, e := Open("test/ok.aiff", Read, &i)
 	if e != nil {
 		t.Fatal(e)
 	}
@@ -53,7 +53,7 @@ func TestReadShortItems(t *testing.T) {
 
 func TestReadShortFrames(t *testing.T) {
 	var i Info
-	f, e := Open("ok.aiff", Read, &i)
+	f, e := Open("test/ok.aiff", Read, &i)
 	if e != nil {
 		t.Fatal(e)
 	}
@@ -76,7 +76,7 @@ func TestReadShortFrames(t *testing.T) {
 
 func TestReadShortFramesSeek(t *testing.T) {
 	var i Info
-	f, e := Open("ok.aiff", Read, &i)
+	f, e := Open("test/ok.aiff", Read, &i)
 	if e != nil {
 		t.Fatal(e)
 	}
@@ -118,7 +118,7 @@ func goldenIntFramesSeekInput() []int32 {
 
 func TestReadIntItems(t *testing.T) {
 	var i Info
-	f, e := Open("ok.aiff", Read, &i)
+	f, e := Open("test/ok.aiff", Read, &i)
 	if e != nil {
 		t.Fatal(e)
 	}
@@ -141,7 +141,7 @@ func TestReadIntItems(t *testing.T) {
 
 func TestReadIntFrames(t *testing.T) {
 	var i Info
-	f, e := Open("ok.aiff", Read, &i)
+	f, e := Open("test/ok.aiff", Read, &i)
 	if e != nil {
 		t.Fatal(e)
 	}
@@ -164,7 +164,7 @@ func TestReadIntFrames(t *testing.T) {
 
 func TestReadIntFramesSeek(t *testing.T) {
 	var i Info
-	f, e := Open("ok.aiff", Read, &i)
+	f, e := Open("test/ok.aiff", Read, &i)
 	if e != nil {
 		t.Fatal(e)
 	}
