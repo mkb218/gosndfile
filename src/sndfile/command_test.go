@@ -539,3 +539,50 @@ func TestUpdateHeader(t *testing.T) {
 	
 	f.Close()
 }
+
+func TestBroadcast(t *testing.T) {
+	var i Info
+	i.Format = SF_FORMAT_WAV|SF_FORMAT_PCM_16
+	i.Channels = 1
+	i.Samplerate = 8000
+	
+	f, err := Open("broadcast", Write, &i)
+	if err != nil {
+		t.Fatal("couldn't open broacast file for write", err)
+	}
+	
+	var bi BroadcastInfo
+	bi.Description = "gosndfile test data"
+	bi.Originator = "republic of nynex"
+	bi.Originator_reference = "http://hydrogenproject.com"
+	bi.Origination_date = "2011/09/27"
+	bi.Origination_time = "17:49"
+	bi.Time_reference_low = 123456
+	bi.Time_reference_high = 7891011
+	bi.Version = 1 // libsndfile always writes a 1
+	bi.Umid = "ummm"
+	bi.Coding_history = make([]int8,257) // we don't set coding history, libsndfile does that
+	bi.Coding_history[255] = 0x7f
+	bi.Coding_history[256] = 0x11
+	f.SetBroadcastInfo(&bi)
+	f.Close()
+	
+	f, err = Open("broadcast", Read, &i)
+	if err != nil {
+		t.Fatal("couldn't open broadcast for read", err)
+	}
+	bi2, ok := f.GetBroadcastInfo()
+	if !ok {
+		t.Error("error retrieving broadcast info", err)
+	}
+	if bi.Description != bi2.Description {
+		t.Error("desc doesn't match \""+ bi.Description + "\" \""+ bi2.Description+ "\"")
+	}
+	if !reflect.DeepEqual(bi2.Coding_history, []int8{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,65,61,80,67,77,44,70,61,56,48,48,48,44,87,61,49,54,44,77,61,109,111,110,111,44,84,61,108,105,98,115,110,100,102,105,108,101,45,49,46,48,46,50,53,13,10,0,0}) {
+		t.Error("coding history mismatch")
+	}
+	bi.Coding_history = []int8{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,65,61,80,67,77,44,70,61,56,48,48,48,44,87,61,49,54,44,77,61,109,111,110,111,44,84,61,108,105,98,115,110,100,102,105,108,101,45,49,46,48,46,50,53,13,10,0,0}
+	if !reflect.DeepEqual(&bi, bi2) {
+		t.Error("deepequal fails", &bi, bi2)
+	}
+}

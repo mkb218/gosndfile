@@ -3,8 +3,10 @@ package sndfile
 // #cgo LDFLAGS: -lsndfile
 // #include <stdlib.h>
 // #include <sndfile.h>
+// #include <string.h>
 import "C"
 
+import "strings"
 import "unsafe"
 import "os"
 import "fmt"
@@ -327,9 +329,8 @@ type BroadcastInfo struct {
 	Origination_time string
 	Time_reference_low uint32
 	Time_reference_high uint32
-	Version int16
+	Version uint16
 	Umid string
-	Coding_history_size uint32
 	Coding_history []int8
 }
 
@@ -341,20 +342,33 @@ func goStringFromArr(c []C.char) string {
 	return string(s)
 }
 
+func trim(in string) string {
+	i := strings.IndexRune(in, 0)
+	if i > -1 {
+		return in[0:i]
+	} else {
+		return in
+	}
+	return "shelzbut" // shut up compiler
+}
+
 func broadcastFromC(c *C.SF_BROADCAST_INFO) *BroadcastInfo {
 	bi := new(BroadcastInfo)
-	bi.Description = C.GoStringN(&c.description[0], C.int(len(c.description[:])))
-	bi.Originator = C.GoStringN(&c.originator[0], C.int(len(c.originator[:])))
-	bi.Origination_date = C.GoStringN(&c.origination_date[0], C.int(len(c.origination_date[:])))
-	bi.Origination_time = C.GoStringN(&c.origination_time[0], C.int(len(c.origination_time[:])))
+	bi.Description = trim(C.GoStringN(&c.description[0], C.int(len(c.description[:]))))
+	bi.Originator = trim(C.GoStringN(&c.originator[0], C.int(len(c.originator[:]))))
+	bi.Originator_reference = trim(C.GoStringN(&c.originator_reference[0], C.int(len(c.originator_reference[:]))))
+	bi.Origination_date = trim(C.GoStringN(&c.origination_date[0], C.int(len(c.origination_date[:]))))
+	bi.Origination_time = trim(C.GoStringN(&c.origination_time[0], C.int(len(c.origination_time[:]))))
 	bi.Time_reference_low = uint32(c.time_reference_low)
 	bi.Time_reference_high = uint32(c.time_reference_high)
-	bi.Version = int16(c.version)
-	bi.Umid = C.GoStringN(&c.umid[0], C.int(len(c.umid[:])))
-	bi.Coding_history_size = uint32(c.coding_history_size)
-	bi.Coding_history = make([]int8, 256)
+	bi.Version = uint16(c.version)
+	bi.Umid = trim(C.GoStringN(&c.umid[0], C.int(len(c.umid[:]))))
+	bi.Coding_history = make([]int8, c.coding_history_size, 256)
 	for i, r := range c.coding_history {
-		bi.Coding_history[i] = int8(r)
+		if i >= int(c.coding_history_size) {
+			break
+		}
+		bi.Coding_history = append(bi.Coding_history,int8(r))
 	}
 	return bi
 }
@@ -374,6 +388,9 @@ func (f *File) GetBroadcastInfo() (bi *BroadcastInfo, ok bool) {
 
 func arrFromGoString(arr []C.char, src string) {
 	for i, r := range src {
+		if i >= len(arr) {
+			break
+		}
 		arr[i] = C.char(r)
 	}
 }
@@ -382,14 +399,19 @@ func cFromBroadcast(bi *BroadcastInfo) (c *C.SF_BROADCAST_INFO) {
 	c = new(C.SF_BROADCAST_INFO)
 	arrFromGoString(c.description[:], bi.Description)
 	arrFromGoString(c.originator[:], bi.Originator)
+	arrFromGoString(c.originator_reference[:], bi.Originator_reference)
 	arrFromGoString(c.origination_date[:], bi.Origination_date)
 	arrFromGoString(c.origination_time[:], bi.Origination_time)
 	c.time_reference_low = C.uint(bi.Time_reference_low)
 	c.time_reference_high = C.uint(bi.Time_reference_high)
 	c.version = C.short(bi.Version)
 	arrFromGoString(c.umid[:], bi.Umid)
-	c.coding_history_size = C.uint(bi.Coding_history_size)
-	for i, r := range bi.Coding_history {
+	ch := bi.Coding_history
+	if len(bi.Coding_history) > 256 {
+		ch = bi.Coding_history[0:256]
+	}
+	c.coding_history_size = C.uint(len(ch))
+	for i, r := range ch {
 		c.coding_history[i] = C.char(r)
 	}
 	return c
