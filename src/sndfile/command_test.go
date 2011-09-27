@@ -418,3 +418,52 @@ func floatEqual(f1, f2 interface{}) bool {
 	}
 	return true
 }
+
+func TestScaleFactor(t *testing.T) {
+	var i Info
+	i.Format = SF_FORMAT_AIFF|SF_FORMAT_FLOAT
+	i.Channels = 1
+	i.Samplerate = 8000
+	os.Remove("scalefactor.aiff")
+	f, err := Open("scalefactor.aiff", ReadWrite, &i)
+	if err != nil {
+		t.Fatal("couldn't open scale factor out", err)
+	}
+	f.SetIntFloatScaleWrite(false)
+	out := []int16{2,2,4,4,-2,-2,-4,-4}
+	n, err := f.WriteItems(out)
+	if n != int64(len(out)) || err != nil {
+		t.Error("couldn't write items",err)
+	}
+	f.SetIntFloatScaleWrite(true)
+	n, err = f.WriteItems(out)
+	if n != int64(len(out)) || err != nil {
+		t.Error("couldn't write items",err)
+	}
+	
+	in := make([]int16, 2)
+	f.Seek(0,Set)
+	f.SetFloatIntScaleRead(false)
+	n, err = f.ReadItems(in)
+	if err != nil || n != 2 {
+		t.Error("couldn't read items!",n,err)
+	}
+	
+	if !reflect.DeepEqual(in, []int16{2,2}) {
+		t.Error("bad read 1", in)
+	}
+	f.SetFloatIntScaleRead(true)
+	n, err = f.ReadItems(in)
+	if !reflect.DeepEqual(in, []int16{16384,16384}) {
+		t.Error("bad read 2", in)
+	}
+	n, err = f.ReadItems(in)
+	if !reflect.DeepEqual(in, []int16{32767,32767}) {
+		t.Error("bad read 3", in)
+	}
+	f.SetFloatIntScaleRead(false)
+	n, err = f.ReadItems(in)
+	if !reflect.DeepEqual(in, []int16{-2,-2}) {
+		t.Error("bad read 4", in)
+	}
+}
