@@ -374,7 +374,6 @@ func broadcastFromC(c *C.SF_BROADCAST_INFO) *BroadcastInfo {
 }
 
 // Retrieve the Broadcast Extension Chunk from WAV (and related) files.
-// needs test
 func (f *File) GetBroadcastInfo() (bi *BroadcastInfo, ok bool) {
 	bic := new(C.SF_BROADCAST_INFO)
 	
@@ -418,7 +417,6 @@ func cFromBroadcast(bi *BroadcastInfo) (c *C.SF_BROADCAST_INFO) {
 }
 
 // Set the Broadcast Extension Chunk from WAV (and related) files.
-// needs test
 func (f *File) SetBroadcastInfo(bi *BroadcastInfo) (err os.Error) {
 	c := cFromBroadcast(bi)
 	r := C.sf_command(f.s, C.SFC_SET_BROADCAST_INFO, unsafe.Pointer(c), C.int(unsafe.Sizeof(*c)))
