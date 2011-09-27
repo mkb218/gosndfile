@@ -1,6 +1,7 @@
 package sndfile
 
 import "os"
+import "encoding/binary"
 import "math"
 import "reflect"
 import "testing"
@@ -97,15 +98,22 @@ func TestFormats(t *testing.T) {
 		f, name, ext, ok := GetMajorFormatInfo(m)
 		if ok {
 			fmt.Printf("--- MAJOR 0x%08x %v Extension: .%v\n", f, name, ext)
+			af, aname, aext, ok := GetFormatInfo(f)
+			if !ok || f != af || aname != name || aext != ext {
+				t.Error(f, "!=", af, name, "!=", aname, ext, "!=", aext)
+			}
+				
 			for s := 0; s < subcount; s++ {
-				t, sname, sok := GetSubFormatInfo(s)
+				sf, sname, sok := GetSubFormatInfo(s)
+				asf, aname, _, ok := GetFormatInfo(sf)
+				if !ok || sf != asf || aname != sname {
+					t.Error("sub", sf, "!=", asf, sname, "!=", aname)
+				}
 				var i Info
 				i.Channels = 1
-				i.Format = Format(f|t)
+				i.Format = Format(f|sf)
 				if sok && FormatCheck(i) {
-					fmt.Printf("   0x%08x %v %v\n", f|t, name, sname)
-				} else {
-//					fmt.Printf("no format pair 0x%x\n", f|t)
+					fmt.Printf("   0x%08x %v %v\n", f|sf, name, sname)
 				}
 			}
 		} else {
@@ -466,4 +474,68 @@ func TestScaleFactor(t *testing.T) {
 	if !reflect.DeepEqual(in, []int16{-2,-2}) {
 		t.Error("bad read 4", in)
 	}
+}
+
+func checkLength(t *testing.T) int32 {
+	f, err := os.Open("update")
+	if err != nil {
+		t.Fatal("couldn't open file", err)
+	}
+	f.Seek(40, os.SEEK_SET)
+	var length int32
+	err = binary.Read(f, binary.LittleEndian, &length)
+	if err != nil {
+		t.Fatal("couldn't read from file", err)
+	}
+	f.Close()
+	return length
+}
+
+func TestUpdateHeader(t *testing.T) {
+	var i Info
+	i.Format = SF_FORMAT_WAV|SF_FORMAT_PCM_16
+	i.Channels = 1
+	i.Samplerate = 8000
+	os.Remove("update")
+	f, err := Open("update", ReadWrite, &i)
+	if err != nil {
+		t.Fatal("couldn't open update.aiff")
+	}
+	b := f.SetUpdateHeaderAuto(true) // this appears to just return what you passed it
+	if !b {
+		t.Error("couldn't set SetUpdateHeaderAuto")
+	}
+	l := checkLength(t)
+	if l != 0 {
+		t.Error("length was non-zero before any writes?!?")
+	}
+	out := []int16{1,4,5,2,45,12,35,2,3,56,345,64,456,7,345,62,4567,34,67,34,56,34,56,3,456}
+	var totsize int
+	for i := 0; i <= 100; i++ {
+		f.WriteItems(out)
+		l = checkLength(t)
+		if l != int32((i+1)*len(out)*2) { // WAV size is in bytes, not samples
+			t.Error("header didn't update?", l, "!=", (i+1)*len(out)*2)
+		}
+		totsize += len(out)*2
+	}
+	b = f.SetUpdateHeaderAuto(false)
+	if b {
+		t.Error("couldn't set SetUpdateHeaderAuto to false")
+	}
+	for i := 0; i <= 100; i++ {
+		f.WriteItems(out)
+		nl := checkLength(t)
+		if l != nl { // WAV size is in bytes, not samples
+			t.Error("header updated when auto = false", l, "!=", nl)
+		}
+		totsize += len(out)*2
+	}
+	f.UpdateHeaderNow()
+	nl := checkLength(t)
+	if int(nl) != totsize {
+		t.Error("bad size?",nl, "!=", totsize)
+	}
+	
+	f.Close()
 }

@@ -132,13 +132,11 @@ func (f *File) GetDoubleNormalization() bool {
 }
 
 //Set/clear the scale factor when integer (short/int) data is read from a file containing floating point data.
-//needs test
 func (f *File) SetFloatIntScaleRead(scale bool) bool {
 	return f.genericBoolBoolCmd(C.SFC_SET_SCALE_FLOAT_INT_READ, scale)
 }
 
 //Set/clear the scale factor when integer (short/int) data is written to a file as floating point data.
-//needs test
 func (f *File) SetIntFloatScaleWrite(scale bool) bool {
 	return f.genericBoolBoolCmd(C.SFC_SET_SCALE_INT_FLOAT_WRITE, scale)
 }
@@ -153,7 +151,6 @@ func GetSimpleFormatCount() int {
 //Retrieve information about a simple format.
 //The value of the format argument should be the format number (ie 0 <= format <= count value obtained using GetSimpleFormatCount()).
 // The returned format argument is suitable for use in sndfile.Open()
-//needs example
 func GetSimpleFormat(format int) (oformat int, name string, extension string, ok bool) {
 	var o C.SF_FORMAT_INFO
 	o.format = C.int(format)
@@ -165,7 +162,6 @@ func GetSimpleFormat(format int) (oformat int, name string, extension string, ok
 }
 
 //When GetFormatInfo() is called, the format argument is examined and if (format & SF_FORMAT_TYPEMASK) is a valid format then the returned strings contain information about the given major type. If (format & SF_FORMAT_TYPEMASK) is FALSE and (format & SF_FORMAT_SUBMASK) is a valid subtype format then the returned strings contain information about the given subtype.
-//needs example, test
 func GetFormatInfo(format int) (oformat int, name string, extension string, ok bool) {
 	var o C.SF_FORMAT_INFO
 	o.format = C.int(format)
@@ -222,13 +218,11 @@ func (f *File) SetAddPeakChunk(set bool) bool {
 //The header of an audio file is normally written by libsndfile when the file is closed using sf_close().
 
 //There are however situations where large files are being generated and it would be nice to have valid data in the header before the file is complete. Using this command will update the file header to reflect the amount of data written to the file so far. Other programs opening the file for read (before any more data is written) will then read a valid sound file header.
-//needs test
 func (f *File) UpdateHeaderNow() {
 	C.sf_command(f.s, C.SFC_UPDATE_HEADER_NOW, nil, 0)
 }
 
 //Similar to SFC_UPDATE_HEADER_NOW but updates the header at the end of every call to the sf_write* functions.
-//needstest
 func (f *File) SetUpdateHeaderAuto(set bool) bool {
 	return f.genericBoolBoolCmd(C.SFC_SET_UPDATE_HEADER_AUTO, set)
 }
