@@ -471,9 +471,9 @@ func (f *File) GetLoopInfo() (i *LoopInfo) {
 
 type Instrument struct {
 	Gain int
-	Basenote, Detune byte
-	Velocity [2]byte // low byte is index 0
-	Key [2]byte // low byte is index 0
+	Basenote, Detune int8
+	Velocity [2]int8 // low byte is index 0
+	Key [2]int8 // low byte is index 0
 	LoopCount int
 	Loops [16]struct {
 		Mode LoopMode
@@ -486,15 +486,16 @@ type Instrument struct {
 // Return pointer to populated structure if the file header contains instrument information for the file. nil otherwise.
 func (f *File) GetInstrument() (i *Instrument) {
 	c := new(C.SF_INSTRUMENT)
+	i = new(Instrument)
 	r := C.sf_command(f.s, C.SFC_GET_INSTRUMENT, unsafe.Pointer(c), C.int(unsafe.Sizeof(*c)))
 	if r == C.SF_TRUE {
 		i.Gain = int(c.gain)
-		i.Basenote = byte(c.basenote)
-		i.Detune = byte(c.detune)
-		i.Velocity[0] = byte(c.velocity_lo)
-		i.Velocity[1] = byte(c.velocity_hi)
-		i.Key[0] = byte(c.key_lo)
-		i.Key[1] = byte(c.key_hi)
+		i.Basenote = int8(c.basenote)
+		i.Detune = int8(c.detune)
+		i.Velocity[0] = int8(c.velocity_lo)
+		i.Velocity[1] = int8(c.velocity_hi)
+		i.Key[0] = int8(c.key_lo)
+		i.Key[1] = int8(c.key_hi)
 		i.LoopCount = int(c.loop_count)
 		for index, loop := range c.loops {
 			i.Loops[index].Mode = LoopMode(loop.mode)
@@ -512,20 +513,22 @@ func (f *File) GetInstrument() (i *Instrument) {
 // needs test
 func (f *File) SetInstrument(i *Instrument) bool {
 	c := new(C.SF_INSTRUMENT)
-	i.Gain = int(c.gain)
-	i.Basenote = byte(c.basenote)
-	i.Detune = byte(c.detune)
-	i.Velocity[0] = byte(c.velocity_lo)
-	i.Velocity[1] = byte(c.velocity_hi)
-	i.Key[0] = byte(c.key_lo)
-	i.Key[1] = byte(c.key_hi)
-	i.LoopCount = int(c.loop_count)
-	for index, loop := range c.loops {
-		i.Loops[index].Mode = LoopMode(loop.mode)
-		i.Loops[index].Start = uint(loop.start)
-		i.Loops[index].End = uint(loop.end)
-		i.Loops[index].Count = uint(loop.count)
+	c.gain = C.int(i.Gain)
+	c.basenote = C.char(i.Basenote)
+	c.detune = C.char(i.Detune)
+	c.velocity_lo = C.char(i.Velocity[0])
+	c.velocity_hi = C.char(i.Velocity[1])
+	c.key_lo = C.char(i.Key[0])
+	c.key_hi = C.char(i.Key[1])
+	c.loop_count = C.int(i.LoopCount)
+	for index, _ := range i.Loops {
+		c.loops[index].mode = C.int(i.Loops[index].Mode)
+		c.loops[index].start = C.uint(i.Loops[index].Start)
+		c.loops[index].end = C.uint(i.Loops[index].End)
+		c.loops[index].count = C.uint(i.Loops[index].Count)
 	}
+	fmt.Println(i)
+	fmt.Println(c)
 	r := C.sf_command(f.s, C.SFC_SET_INSTRUMENT, unsafe.Pointer(c), C.int(unsafe.Sizeof(*c)))
 	return (r == C.SF_TRUE)
 }

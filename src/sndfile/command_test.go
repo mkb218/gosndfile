@@ -586,3 +586,55 @@ func TestBroadcast(t *testing.T) {
 		t.Error("deepequal fails", &bi, bi2)
 	}
 }
+
+func TestInstrument(t *testing.T) {
+	var i Info
+	i.Format = SF_FORMAT_AIFF|SF_FORMAT_PCM_24
+	i.Channels = 2
+	i.Samplerate = 44100
+	f, err := Open("musicenztrumentz.aiff", Write, &i)
+	if err != nil {
+		t.Fatal("couldn't open file", err)
+	}
+	var inst Instrument
+	inst.Gain = 1
+	inst.Basenote = 64
+	inst.Detune = -4
+	inst.Velocity[0] = 14
+	inst.Velocity[1] = 1
+	inst.Key[0] = 0
+	inst.Key[1] = 0
+	inst.LoopCount = 1
+	inst.Loops[0].Mode = Alternating
+	inst.Loops[0].Start = 0
+	inst.Loops[0].End = 400
+	inst.Loops[0].Count = 0
+	ok := f.SetInstrument(&inst)
+	if !ok {
+		t.Error("SetInstrument failed")
+	}
+	out := make([]int32, 44100*2)
+	for i, _ := range out {
+		out[i] = int32((i / 8) << 24)
+	}
+	n, err := f.WriteItems(out)
+	if err != nil {
+		t.Error("couldn't write to file", n, err)
+	}
+	f.Close()
+	f, err = Open("musicenztrumentz.aiff", Read, &i)
+	newinst := f.GetInstrument()
+	if !reflect.DeepEqual(newinst, inst) {
+		t.Error("insts didn't match",inst,newinst)
+	}
+}
+
+// two left i can do without needing to find test data elsewhere:
+// get/set ambisonic
+// get set clipping
+
+// how do i make sure vbr quality is passed along correctly?
+
+// i need to create a file with loop info. AIFF only
+
+//embedded file. buh?

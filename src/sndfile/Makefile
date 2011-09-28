@@ -15,6 +15,6 @@ CGOFILES=\
 	raw.go\
 	virtual.go
 
-CLEANFILES+=leout.wav truncout.aiff addpeakchunk1.aiff norm.aiff funky2.aiff update broadcast
+CLEANFILES+=leout.wav truncout.aiff addpeakchunk1.aiff norm.aiff funky2.aiff update broadcast musicenztrumentz.aiff
 
 include $(GOROOT)/src/Make.pkg
