@@ -5,13 +5,12 @@ import "encoding/binary"
 import "math"
 import "reflect"
 import "testing"
-import "fmt"
 import "strings"
 import "unsafe"
 
 func TestGetLibVersion(t *testing.T) {
 	s, _ := GetLibVersion()
-	fmt.Println(s)
+	t.Log(s)
 	if !strings.HasPrefix(s, "libsndfile") {
 		t.Errorf("version string \"%s\" had unexpected prefix", s)
 	}
@@ -23,7 +22,7 @@ func TestGetLogInfo(t *testing.T) {
 //	fmt.Println(f)
 //	fmt.Println(err)
 	s, err := f.GetLogInfo()
-	fmt.Println("TestGetLogInfo output: ", s)
+	t.Log("TestGetLogInfo output: ", s)
 	if err != nil {
 		t.Error("TestGetLogInfo err: ", err)
 	}
@@ -41,28 +40,28 @@ func TestFileCommands(t *testing.T) {
 		t.Fatalf("signal max failed %s", err)
 	}
 	
-	fmt.Printf("max signal %f\n", max)
+	t.Logf("max signal %f\n", max)
 
 	max, err = f.CalcNormSignalMax()
 	if err != nil {
 		t.Fatalf("norm signal max failed %s", err)
 	}
 	
-	fmt.Printf("norm max signal %f\n", max)
+	t.Logf("norm max signal %f\n", max)
 
 	maxarr, err := f.CalcMaxAllChannels()
 	if err != nil {
 		t.Fatalf("max all chans failed %s", err)
 	}
 	
-	fmt.Printf("max all chans signal %v\n", maxarr)
+	t.Logf("max all chans signal %v\n", maxarr)
 	
 	maxarr, err = f.CalcNormMaxAllChannels()
 	if err != nil {
 		t.Fatalf("max all chans failed %s", err)
 	}
 	
-	fmt.Printf("norm max all chans signal %v\n", maxarr)
+	t.Logf("norm max all chans signal %v\n", maxarr)
 
 
 	max, ok := f.GetSignalMax()
@@ -81,23 +80,23 @@ func TestFileCommands(t *testing.T) {
 
 func TestFormats(t *testing.T) {
 	simpleformats := GetSimpleFormatCount()
-	fmt.Println("--- Supported simple formats")
+	t.Log("--- Supported simple formats")
 	for i := 0; i < simpleformats; i++ {
 		f, name, ext, ok := GetSimpleFormat(i)
-		fmt.Printf("%08x %s %s\n", f, name, ext)
+		t.Logf("%08x %s %s\n", f, name, ext)
 		if !ok {
 			t.Error("error from GetSimpleFormat()")
 		}
 	}
 	
-	fmt.Println("--- Supported formats")
+	t.Log("--- Supported formats")
 	// following is straight from examples in libsndfile distribution
 	majorcount := GetMajorFormatCount()
 	subcount := GetSubFormatCount()
 	for m := 0; m < majorcount; m++ {
 		f, name, ext, ok := GetMajorFormatInfo(m)
 		if ok {
-			fmt.Printf("--- MAJOR 0x%08x %v Extension: .%v\n", f, name, ext)
+			t.Logf("--- MAJOR 0x%08x %v Extension: .%v\n", f, name, ext)
 			af, aname, aext, ok := GetFormatInfo(f)
 			if !ok || f != af || aname != name || aext != ext {
 				t.Error(f, "!=", af, name, "!=", aname, ext, "!=", aext)
@@ -113,11 +112,11 @@ func TestFormats(t *testing.T) {
 				i.Channels = 1
 				i.Format = Format(f|sf)
 				if sok && FormatCheck(i) {
-					fmt.Printf("   0x%08x %v %v\n", f|sf, name, sname)
+					t.Logf("   0x%08x %v %v\n", f|sf, name, sname)
 				}
 			}
 		} else {
-			fmt.Printf("no format for number %v\n", m)
+			t.Logf("no format for number %v\n", m)
 		}
 	}
 }
@@ -406,7 +405,6 @@ func floatEqual(f1, f2 interface{}) bool {
 		}
 		for i, f1c := range f1v {
 			if math.Fabs(f1c - f2v[i]) > math.SmallestNonzeroFloat64 {
-				fmt.Println(f1, f2v, math.Fabs(f1c - f2v[i]), math.SmallestNonzeroFloat64)
 				return false
 			}
 		}
@@ -606,8 +604,8 @@ func TestInstrument(t *testing.T) {
 	inst.Key[1] = 0
 	inst.LoopCount = 1
 	inst.Loops[0].Mode = Alternating
-	inst.Loops[0].Start = 0
-	inst.Loops[0].End = 400
+	inst.Loops[0].Start = 0x123
+	inst.Loops[0].End = 0x321
 	inst.Loops[0].Count = 0
 	ok := f.SetInstrument(&inst)
 	if !ok {
@@ -624,9 +622,15 @@ func TestInstrument(t *testing.T) {
 	f.Close()
 	f, err = Open("musicenztrumentz.aiff", Read, &i)
 	newinst := f.GetInstrument()
-	if !reflect.DeepEqual(newinst, inst) {
-		t.Error("insts didn't match",inst,newinst)
+	if inst.Gain != newinst.Gain ||
+		inst.Basenote != newinst.Basenote ||
+		inst.Detune != newinst.Detune ||
+		!reflect.DeepEqual(inst.Velocity, newinst.Velocity) ||
+		!reflect.DeepEqual(inst.Key, newinst.Key) ||
+		inst.LoopCount != newinst.LoopCount {
+			t.Errorf("inst and newinst did not match\n%v\n%v", inst, newinst)
 	}
+	
 }
 
 // two left i can do without needing to find test data elsewhere:
@@ -635,6 +639,6 @@ func TestInstrument(t *testing.T) {
 
 // how do i make sure vbr quality is passed along correctly?
 
-// i need to create a file with loop info. AIFF only
+// i need to create a file with loop info. AIFF only?
 
 //embedded file. buh?

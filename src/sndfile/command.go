@@ -521,14 +521,18 @@ func (f *File) SetInstrument(i *Instrument) bool {
 	c.key_lo = C.char(i.Key[0])
 	c.key_hi = C.char(i.Key[1])
 	c.loop_count = C.int(i.LoopCount)
-	for index, _ := range i.Loops {
+	var index int
+	for ; index < i.LoopCount; index++ {
 		c.loops[index].mode = C.int(i.Loops[index].Mode)
 		c.loops[index].start = C.uint(i.Loops[index].Start)
 		c.loops[index].end = C.uint(i.Loops[index].End)
 		c.loops[index].count = C.uint(i.Loops[index].Count)
 	}
-	fmt.Println(i)
-	fmt.Println(c)
+	for ; index < 16; index++ {
+		c.loops[index].mode = C.int(None)
+		// why is this necessary? libsndfile doesn't check loopcount for AIFF
+	}
+		
 	r := C.sf_command(f.s, C.SFC_SET_INSTRUMENT, unsafe.Pointer(c), C.int(unsafe.Sizeof(*c)))
 	return (r == C.SF_TRUE)
 }
