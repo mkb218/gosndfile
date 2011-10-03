@@ -249,8 +249,7 @@ func (f *File) genericBoolBoolCmd(cmd C.int, i bool) bool {
 	return (n == C.SF_TRUE)
 }
 
-//Change the data start offset for files opened up as SF_FORMAT_RAW.
-// needstest
+//Change the data start offset for files opened up as SF_FORMAT_RAW. libsndfile implements this but it appears to not do anything useful that you can't accomplish with seek, so consider this deprecated.
 func (f *File) SetRawStartOffset(count int64) (err os.Error) {
 	r := C.sf_command(f.s, C.SFC_SET_RAW_START_OFFSET, unsafe.Pointer(&count), 8)
 

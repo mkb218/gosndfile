@@ -4,6 +4,7 @@ import (
 //	"fmt"
 	"reflect"
 	"testing"
+	"os"
 )
 
 func goldenInfo() (i Info) {
@@ -189,4 +190,55 @@ func TestReadIntFramesSeek(t *testing.T) {
 		t.Errorf("data not as expected! %v vs golden %v", buf, goldenIntFramesSeekInput())
 	}
 	return
+}
+
+// openfd
+func TestOpenFd(t *testing.T) {
+	osf, err := os.Create("openfd")
+	if err != nil {
+		t.Fatal("err opening file for fd", err)
+	}
+	var i Info
+	i.Channels = 1
+	i.Samplerate = 44100
+	i.Format = SF_FORMAT_AIFF|SF_FORMAT_PCM_16
+	snf, err := OpenFd(osf.Fd(), Write, &i, true)
+	if err != nil {
+		t.Fatal("err opening fd", err)
+	}
+	n, err := snf.WriteItems([]int16{1,2,3,4,5})
+	if n != 5 || err != nil {
+		t.Error("bad write", n, err)
+	}
+	snf.Close()
+	nf := os.NewFile(osf.Fd(), "openfd")
+	_, err = nf.Write([]byte{1,2,3,4,5})
+	if err == nil {
+		t.Error("File must not have closed")
+	}
+}
+
+// set/get string
+func TestGetSetString(t *testing.T) {
+	s := "TEST_STRING_HOOAH"
+	var i Info
+	i.Format = SF_FORMAT_WAV|SF_FORMAT_PCM_16
+	i.Channels = 1
+	i.Samplerate = 44100
+	f, err := Open("getsetstring.wav", Write, &i)
+	if err != nil {
+		t.Fatal("couldn't open file to write", err)
+	}
+	f.SetString(s, First)
+	f.WriteItems([]int16{1,2,3,4,5})
+	f.Close()
+	
+	f, err = Open("getsetstring.wav", Read, &i)
+	if err != nil {
+		t.Fatal("couldn't open file to read", err)
+	}
+	si := f.GetString(First)
+	if si != s {
+		t.Error("wrong string came back!", s, "!=", si)
+	}
 }

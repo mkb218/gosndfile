@@ -633,6 +633,45 @@ func TestInstrument(t *testing.T) {
 	
 }
 
+// don't run this. looks like the actual command is a no-op!
+func testRawOffset(t *testing.T) {
+	var i Info
+	i.Format = SF_FORMAT_RAW|SF_FORMAT_PCM_S8
+	i.Samplerate = 8000
+	i.Channels = 1
+	
+	f, err := Open("rawtest", Write, &i)
+	if err != nil {
+		t.Fatal("Writing file failed", err)
+	}
+	for i := int16(-256); i <= 255; i++ {
+		f.WriteItems([]int16{i<<8})
+	}
+/*	n, err := f.WriteFrames([]int16{0x100, 0x200,0x300,0x400,0x500,0x600,0x700,0x7f00})
+	if err != nil || n != 4 {
+		t.Error("Writing file failed", err)
+	}*/
+	var n int64
+	f.Close()
+	
+	f, err = Open("rawtest", Read, &i)
+	if err != nil {
+		t.Fatal("reading file failed", err)
+	}	
+	err = f.SetRawStartOffset(4)
+	if err != nil {
+		t.Error("set raw start failed!",err)
+	}
+	buf := make([]int16,4)
+	n, err = f.ReadFrames(buf)
+	if err != nil || n != 4 {
+		t.Fatal("reading file failed", n, err)
+	}
+	if !reflect.DeepEqual(buf, []int16{0x500,0x600,0x700,0x800}) {
+		t.Error("bad stuff", buf, []int16{0x500,0x600,0x700,0x800})
+	}
+}
+
 // two left i can do without needing to find test data elsewhere:
 // get/set ambisonic
 // get set clipping

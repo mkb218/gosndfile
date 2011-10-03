@@ -11,6 +11,7 @@ import (
 	"os"
 	"unsafe"
 	"reflect"
+	//"fmt"
 )
 
 // A sound file. Does not conform to io.Reader.
@@ -18,6 +19,8 @@ type File struct {
 	s      *C.SNDFILE
 	Format Info
 	virtual *virtualIo // really only necessary to keep a reference so GC doesn't eat it
+	fd int
+	closeFd bool
 }
 
 // sErrorType represents a sndfile API error and grabs error description strings from the API.
@@ -167,15 +170,12 @@ func Open(name string, mode Mode, info *Info) (o *File, err os.Error) {
 // This probably won't work on windows, because go uses handles instead of integer file descriptors on Windows. Unfortunately I have no way to test.
 // The mode and info arguments, and the return values, are the same as for Open().
 // close_desc should be true if you want the library to close the file descriptor when you close the sndfile.File object
-// needs test.
 func OpenFd(fd int, mode Mode, info *Info, close_desc bool) (o *File, err os.Error) {
 	o = new(File)
-	var cd C.int
-	if close_desc {
-		cd = 1
-	}
+	o.closeFd = close_desc
+	o.fd = fd
 	ci := info.toCinfo()
-	o.s = C.sf_open_fd(C.int(fd), C.int(mode), ci, cd)
+	o.s = C.sf_open_fd(C.int(fd), C.int(mode), ci, 0) // don't want libsndfile to close a Go file object from under us
 	if o.s == nil {
 		err = sErrorType(C.sf_error(o.s))
 	}
@@ -216,11 +216,15 @@ func (f *File) Close() (err os.Error) {
 	if C.sf_close(f.s) != 0 {
 		err = sErrorType(C.sf_error(f.s))
 	}
+	if f.closeFd { 
+		nf := os.NewFile(f.fd, "")
+		nf.Close()
+	}
+		
 	return
 }
 
 //If the file is opened Write or ReadWrite, call the operating system's function to force the writing of all file cache buffers to disk. If the file is opened Read no action is taken.
-// needs test
 func (f *File) WriteSync() {
 	C.sf_write_sync(f.s)
 }
@@ -242,7 +246,7 @@ func (f *File) ReadItems(out interface{}) (read int64, err os.Error) {
 
 	v := reflect.ValueOf(out)
 	l := v.Len()
-	o := v.Slice(0, l-1)
+	o := v.Slice(0, l)
 	var n C.sf_count_t
 	switch t.Elem().Kind() {
 	case reflect.Int16:
@@ -288,7 +292,7 @@ func (f *File) ReadFrames(out interface{}) (read int64, err os.Error) {
 
 	v := reflect.ValueOf(out)
 	l := v.Len()
-	o := v.Slice(0, l-1)
+	o := v.Slice(0, l)
 	frames := l / int(f.Format.Channels)
 	if frames < 1 {
 		err = os.EOF
@@ -353,19 +357,16 @@ const (
 )
 
 //The GetString() method returns the specified string if it exists and a NULL pointer otherwise. In addition to the string ids above, First (== Title) and Last (always the same as the highest numbers string id) are also available to allow iteration over all the available string ids.
-// needs test
-func (f *File) GetString(typ StringType) (out *string) {
+func (f *File) GetString(typ StringType) (out string) {
 	// although it's not clear from the docs, sf_get_string doesn't require you to free the string that is returned
 	s := C.sf_get_string(f.s, C.int(typ))
 	if s != nil {
-		out = new(string)
-		*out = C.GoString(s)
+		out = C.GoString(s)
 	}
 	return
 }
 
-//The SetString() method sets the string data ina file. It returns nil on success and non-nil on error.
-// needs test
+//The SetString() method sets the string data in a file. It returns nil on success and non-nil on error.
 func (f *File) SetString(in string, typ StringType) (err os.Error) {
 	s := C.CString(in)
 	defer C.free(unsafe.Pointer(s))
@@ -375,21 +376,21 @@ func (f *File) SetString(in string, typ StringType) (err os.Error) {
 	return
 }
 
-//The file write items functions write the data in the array pointed to by ptr to the file. The items parameter must be an integer product of the number of channels or an error will occur.
+//The file write items function writes the data in the array or slice in the input argument to the file. The length of the slice must be an integer product of the number of channels or an error will occur.
 //
 //It is important to note that the data type used by the calling program and the data format of the file do not need to be the same. For instance, it is possible to open a 16 bit PCM encoded WAV file and write the data from a []float32. The library seamlessly converts between the two formats on-the-fly.
 //
-//Returns the number of items written (which should be the same as the items parameter).
-// needs test
+//Returns the number of items written (which should be the same as the length of the input parameter). err will be nil, except in case of failure
+
 func (f *File) WriteItems(in interface{}) (written int64, err os.Error) {
 	t := reflect.TypeOf(in)
 	if t.Kind() != reflect.Array && t.Kind() != reflect.Slice {
 		os.NewError("You need to give me an array!")
 	}
-
+	
 	v := reflect.ValueOf(in)
 	l := v.Len()
-	o := v.Slice(0, l-1)
+	o := v.Slice(0, l)
 	var n C.sf_count_t
 	p := unsafe.Pointer(o.Index(0).Addr().Pointer())
 	switch t.Elem().Kind() {
@@ -431,7 +432,11 @@ func (f *File) WriteItems(in interface{}) (written int64, err os.Error) {
 	return
 }
 
-// needs test + doc
+//The file write frames function writes the data in the array or slice pointed to by the input argument to the file. The items parameter must be an integer product of the number of channels or an error will occur.
+//
+//It is important to note that the data type used by the calling program and the data format of the file do not need to be the same. For instance, it is possible to open a 16 bit PCM encoded WAV file and write the data from a []float32. The library seamlessly converts between the two formats on-the-fly.
+//
+//Returns the number of frames written (which should be the same as the length of the input parameter divided by the number of channels). err wil be nil except in case of failure
 func (f *File) WriteFrames(in interface{}) (written int64, err os.Error) {
 	t := reflect.TypeOf(in)
 	if t.Kind() != reflect.Array && t.Kind() != reflect.Slice {
@@ -440,7 +445,7 @@ func (f *File) WriteFrames(in interface{}) (written int64, err os.Error) {
 
 	v := reflect.ValueOf(in)
 	l := v.Len()
-	o := v.Slice(0, l-1)
+	o := v.Slice(0, l)
 	frames := l / int(f.Format.Channels)
 	if frames < 1 {
 		err = os.EOF
