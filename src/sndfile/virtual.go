@@ -33,6 +33,7 @@ func OpenVirtual(v VirtualIo, mode Mode, info *Info) (f *File, err os.Error) {
 	} else {
 		err = sErrorType(C.sf_error(nil))
 	}
+	runtime.SetFinalizer(f, sfclose)
 	return
 }
 

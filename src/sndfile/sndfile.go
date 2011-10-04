@@ -11,7 +11,7 @@ import (
 	"os"
 	"unsafe"
 	"reflect"
-	//"fmt"
+	"runtime"
 )
 
 // A sound file. Does not conform to io.Reader.
@@ -164,7 +164,12 @@ func Open(name string, mode Mode, info *Info) (o *File, err os.Error) {
 	}
 	*info = fromCinfo(ci)
 	o.Format = *info
+	runtime.SetFinalizer(o, sfclose)
 	return
+}
+
+func sfclose(f *File) {
+	f.Close()
 }
 
 // This probably won't work on windows, because go uses handles instead of integer file descriptors on Windows. Unfortunately I have no way to test.
@@ -181,6 +186,7 @@ func OpenFd(fd int, mode Mode, info *Info, close_desc bool) (o *File, err os.Err
 	}
 	*info = fromCinfo(ci)
 	o.Format = *info
+	runtime.SetFinalizer(o, sfclose)
 	return
 }
 

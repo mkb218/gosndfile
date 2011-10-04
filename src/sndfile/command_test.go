@@ -672,9 +672,44 @@ func testRawOffset(t *testing.T) {
 	}
 }
 
+func TestClipping(t *testing.T) {
+	var i Info
+	i.Format = SF_FORMAT_AIFF|SF_FORMAT_PCM_16
+	i.Samplerate = 8000
+	i.Channels = 1
+	f, err := Open("cliptest.aiff", Write, &i)
+	if err != nil {
+		t.Fatal("opening file for write failed", err)
+	}
+	f.SetClipping(true)
+	n, err := f.WriteItems([]float64{0.5,1.0,1.5,2.0,2.5,3.0,3.5,4.0})
+	if n != 8 || err != nil {
+		t.Error("problem writing", n, err)
+	}
+	f.SetClipping(false)
+	n, err = f.WriteItems([]float64{0.5,1.0,1.5,2.0,2.5,3.0,3.5,4.0})
+	if n != 8 || err != nil {
+		t.Error("problem writing", n, err)
+	}
+	f.Close()
+	f, err = Open("cliptest.aiff", Read, &i)
+	if err != nil {
+		t.Fatal("opening file for read failed", err)
+	}
+	in := make([]int16,16)
+	n, err = f.ReadItems(in)
+	if n != 16 || err != nil {
+		t.Error("problem reading", n, err)
+	}
+	gold := []int16{0x4000, 0x7fff,0x7fff,0x7fff,0x7fff,0x7fff,0x7fff,0x7fff,0x4000,0x7fff,-16386,-2,0x3ffe,32765, -16388,-4}
+	if !reflect.DeepEqual(in, gold) {
+		t.Error("read doesn't match\n", gold, "\n",in)
+	}
+	f.Close()
+}
+
 // two left i can do without needing to find test data elsewhere:
 // get/set ambisonic
-// get set clipping
 
 // how do i make sure vbr quality is passed along correctly?
 
