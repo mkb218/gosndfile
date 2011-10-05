@@ -260,13 +260,11 @@ func (f *File) SetRawStartOffset(count int64) (err os.Error) {
 }
 
 //Turn on/off automatic clipping when doing floating point to integer conversion.
-// needstest
 func (f *File) SetClipping(clip bool) bool {
 	return f.genericBoolBoolCmd(C.SFC_SET_CLIPPING, clip)
 }
 
 //Is automatic clipping when doing floating point to integer conversion on?
-// needstest
 func (f *File) GetClipping(clip bool) bool {
 	return f.genericBoolBoolCmd(C.SFC_GET_CLIPPING, false)
 }
@@ -274,7 +272,7 @@ func (f *File) GetClipping(clip bool) bool {
 //Get the file offset and file length of a file enbedded within another larger file.
 //The value of the offset return value will be the offsets in bytes from the start of the outer file to the start of the embedded audio file.
 //The value of the length return value will be the length in bytes of the embedded file.
-//needstest
+// Untested.
 func (f *File) GetEmbeddedFileInfo() (offset, length int64, err os.Error) {
 	var s C.SF_EMBED_FILE_INFO
 	r := C.sf_command(f.s, C.SFC_GET_EMBED_FILE_INFO, unsafe.Pointer(&s), C.int(unsafe.Sizeof(s)))
@@ -291,20 +289,17 @@ const AmbisonicBFormat int = int(C.SF_AMBISONIC_B_FORMAT)
 
 //Test if the current file has the GUID of a WAVEX file for any of the Ambisonic formats.
 // returns AmbisonicNone or AmbisonicBFormat, or zero if the file format does not support Ambisonic formats
-// needstest
 func (f *File) WavexGetAmbisonic() int {
 	return int(C.sf_command(f.s, C.SFC_WAVEX_GET_AMBISONIC, nil, 0))
 }
 
 //Set the GUID of a new WAVEX file to indicate an Ambisonics format.
 // returns format that was just set, or zero if the file format does not support Ambisonic formats
-//needs test
 func (f *File) WavexSetAmbisonic(ambi int) int {
 	return int(C.sf_command(f.s, C.SFC_WAVEX_SET_AMBISONIC, nil, C.int(ambi)))
 }
 
-//Set the the Variable Bit Rate encoding quality. The encoding quality value should be between 0.0 (lowest quality) and 1.0 (highest quality).
-//needstest
+//Set the the Variable Bit Rate encoding quality. The encoding quality value should be between 0.0 (lowest quality) and 1.0 (highest quality). Untested.
 func (f *File) SetVbrQuality(q float64) (err os.Error) {
 	r := C.sf_command(f.s, C.SFC_SET_VBR_ENCODING_QUALITY, unsafe.Pointer(&q), 8)
 	if r != 0 {
@@ -448,8 +443,7 @@ type LoopInfo struct {
 
 //Retrieve loop information for file including time signature, length in beats and original MIDI base note
 
-// Returns populated structure if file contains loop info, otherwise nil
-//needs test
+// Returns populated structure if file contains loop info, otherwise nil. Untested.
 func (f *File) GetLoopInfo() (i *LoopInfo) {
 	c := new(C.SF_LOOP_INFO)
 	r := C.sf_command(f.s, C.SFC_GET_LOOP_INFO, unsafe.Pointer(c), C.int(unsafe.Sizeof(*c)))
@@ -509,7 +503,6 @@ func (f *File) GetInstrument() (i *Instrument) {
 // Set instrument information from file including MIDI base note, keyboard mapping and looping information (start/stop and mode).
 
 // Return true if the file header contains instrument information for the file. false otherwise.
-// needs test
 func (f *File) SetInstrument(i *Instrument) bool {
 	c := new(C.SF_INSTRUMENT)
 	c.gain = C.int(i.Gain)

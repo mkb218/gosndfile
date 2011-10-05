@@ -708,11 +708,45 @@ func TestClipping(t *testing.T) {
 	f.Close()
 }
 
-// two left i can do without needing to find test data elsewhere:
-// get/set ambisonic
+func TestAmbisonic(t *testing.T) {
+	var i Info
+	i.Format = SF_FORMAT_WAVEX|SF_FORMAT_PCM_32
+	i.Samplerate = 8000
+	i.Channels = 1
+	f, err := Open("ambisonictest.wav", Write, &i)
+	if err != nil {
+		t.Fatal("couldn't open file for write", err)
+	}
+	res := f.WavexSetAmbisonic(AmbisonicBFormat)
+	if res != AmbisonicBFormat {
+		t.Error("couldn't set ambisonic format", res, AmbisonicBFormat)
+	}
+	c := make([]int32,31)
+	for i := range c {
+		c[i] = (1 << uint(i))
+		if i % 2 != 0 {
+			c[i] *= -1
+		}
+	}
+	f.WriteItems(c)
+	f.Close()
+	f, err = Open("ambisonictest.wav", Read, &i)
+	if err != nil {
+		t.Fatal("couldn't open file for reading", err)
+	}
+	if i.Format & SF_FORMAT_WAVEX == 0 {
+		t.Errorf("Wrong format on read %x expected bit %x to be set\n", i.Format, SF_FORMAT_WAVEX)
+	}
+	res = f.WavexGetAmbisonic()
+	if res != AmbisonicBFormat {
+		t.Errorf("Wrong ambisonic answer %d, expected %d\n", res, AmbisonicBFormat)
+	}
+	f.Close()
+	
+}
 
 // how do i make sure vbr quality is passed along correctly?
 
 // i need to create a file with loop info. AIFF only?
 
-//embedded file. buh?
+// embedded file. buh?
