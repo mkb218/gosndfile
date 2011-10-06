@@ -539,3 +539,55 @@ func GenericCmd(f *File, cmd C.int, data unsafe.Pointer, datasize int) int {
 	}
 	return int(C.sf_command(s, cmd, data, C.int(datasize)))
 }
+
+const (
+	ChannelMapInvalid = C.SF_CHANNEL_MAP_INVALID
+	ChannelMapMono = C.SF_CHANNEL_MAP_MONO
+	ChannelMapLeft = C.SF_CHANNEL_MAP_LEFT /* Apple calls this 'Left' */
+	ChannelMapRight = C.SF_CHANNEL_MAP_RIGHT /* Apple calls this 'Right' */
+	ChannelMapCenter = C.SF_CHANNEL_MAP_CENTER /* Apple calls this 'Center' */
+	ChannelMapFrontLeft = C.SF_CHANNEL_MAP_FRONT_LEFT
+	ChannelMapFrontRight = C.SF_CHANNEL_MAP_FRONT_RIGHT
+	ChannelMapFrontCenter = C.SF_CHANNEL_MAP_FRONT_CENTER
+	ChannelMapRearCenter = C.SF_CHANNEL_MAP_REAR_CENTER /* Apple calls this 'Center Surround' Msft calls this 'Back Center' */
+	ChannelMapRearLeft = C.SF_CHANNEL_MAP_REAR_LEFT /* Apple calls this 'Left Surround' Msft calls this 'Back Left' */
+	ChannelMapRearRight = C.SF_CHANNEL_MAP_REAR_RIGHT /* Apple calls this 'Right Surround' Msft calls this 'Back Right' */
+	ChannelMapLfe = C.SF_CHANNEL_MAP_LFE /* Apple calls this 'LFEScreen' Msft calls this 'Low Frequency'  */
+	ChannelMapFrontLeftOfCenter = C.SF_CHANNEL_MAP_FRONT_LEFT_OF_CENTER /* Apple calls this 'Left Center' */
+	ChannelMapFrontRightOfCenter = C.SF_CHANNEL_MAP_FRONT_RIGHT_OF_CENTER /* Apple calls this 'Right Center */
+	ChannelMapSideLeft = C.SF_CHANNEL_MAP_SIDE_LEFT /* Apple calls this 'Left Surround Direct' */
+	ChannelMapSideRight = C.SF_CHANNEL_MAP_SIDE_RIGHT /* Apple calls this 'Right Surround Direct' */
+	ChannelMapTopCenter = C.SF_CHANNEL_MAP_TOP_CENTER /* Apple calls this 'Top Center Surround' */
+	ChannelMapTopFrontLeft = C.SF_CHANNEL_MAP_TOP_FRONT_LEFT /* Apple calls this 'Vertical Height Left' */
+	ChannelMapTopFrontRight = C.SF_CHANNEL_MAP_TOP_FRONT_RIGHT /* Apple calls this 'Vertical Height Right' */
+	ChannelMapTopFrontCenter = C.SF_CHANNEL_MAP_TOP_FRONT_CENTER /* Apple calls this 'Vertical Height Center' */
+	ChannelMapTopRearLeft = C.SF_CHANNEL_MAP_TOP_REAR_LEFT /* Apple and MS call this 'Top Back Left' */
+	ChannelMapTopRearRight = C.SF_CHANNEL_MAP_TOP_REAR_RIGHT /* Apple and MS call this 'Top Back Right' */
+	ChannelMapTopRearCenter = C.SF_CHANNEL_MAP_TOP_REAR_CENTER /* Apple and MS call this 'Top Back Center' */
+	ChannelMapAmbisonicBW = C.SF_CHANNEL_MAP_AMBISONIC_B_W
+	ChannelMapAmbisonicBX = C.SF_CHANNEL_MAP_AMBISONIC_B_X
+	ChannelMapAmbisonicBY = C.SF_CHANNEL_MAP_AMBISONIC_B_Y
+	ChannelMapAmbisonicBZ = C.SF_CHANNEL_MAP_AMBISONIC_B_Z
+	ChannelMapMax = C.SF_CHANNEL_MAP_MAX
+)
+
+// Returns a slice full of integers detailing the position of each channel in the file.
+func (f *File) GetChannelMapInfo() (channels []int32, err os.Error) {
+	channels = make([]int32, f.Format.Channels)
+	r := GenericCmd(f, C.SFC_GET_CHANNEL_MAP_INFO, unsafe.Pointer(&channels[0]), len(channels)*4)
+	if r == C.SF_FALSE {
+		err = os.NewError(C.GoString(C.sf_strerror(f.s)))
+	}
+	return
+}
+
+func (f *File) SetChannelMapInfo(channels []int32) (err os.Error) {
+	if int32(len(channels)) != f.Format.Channels {
+		err = os.NewError("channel map passed in didn't match file channel count " + string(len(channels)) + " != " + string(f.Format.Channels))
+	}
+	r := GenericCmd(f, C.SFC_SET_CHANNEL_MAP_INFO, unsafe.Pointer(&channels[0]), len(channels)*4)
+	if r == C.SF_FALSE {
+		err = os.NewError(C.GoString(C.sf_strerror(f.s)))
+	}
+	return
+}
