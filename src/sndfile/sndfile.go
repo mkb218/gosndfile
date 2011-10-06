@@ -27,7 +27,7 @@ type File struct {
 type sErrorType C.int
 
 func (e sErrorType) String() string {
-	return C.GoString(C.sf_error_number(C.int(e)))
+       return C.GoString(C.sf_error_number(C.int(e)))
 }
 
 // File mode: Read, Write, or ReadWrite
@@ -154,13 +154,16 @@ const (
 
 // returns a pointer to the file and a nil error if successful. In case of error, err will be non-nil.
 func Open(name string, mode Mode, info *Info) (o *File, err os.Error) {
+	if info == nil {
+		return nil, os.NewError("nil pointer passed to open")
+	}
 	o = new(File)
 	c := C.CString(name)
 	defer C.free(unsafe.Pointer(c))
 	ci := info.toCinfo()
 	o.s = C.sf_open(c, C.int(mode), ci)
 	if o.s == nil {
-		err = sErrorType(C.sf_error(o.s))
+		err = os.NewError(C.GoString(C.sf_strerror(o.s)))
 	}
 	*info = fromCinfo(ci)
 	o.Format = *info
@@ -176,13 +179,16 @@ func sfclose(f *File) {
 // The mode and info arguments, and the return values, are the same as for Open().
 // close_desc should be true if you want the library to close the file descriptor when you close the sndfile.File object
 func OpenFd(fd int, mode Mode, info *Info, close_desc bool) (o *File, err os.Error) {
+	if info == nil {
+		return nil, os.NewError("nil pointer passed to open")
+	}
 	o = new(File)
 	o.closeFd = close_desc
 	o.fd = fd
 	ci := info.toCinfo()
 	o.s = C.sf_open_fd(C.int(fd), C.int(mode), ci, 0) // don't want libsndfile to close a Go file object from under us
 	if o.s == nil {
-		err = sErrorType(C.sf_error(o.s))
+		err = os.NewError(C.GoString(C.sf_strerror(o.s)))
 	}
 	*info = fromCinfo(ci)
 	o.Format = *info
@@ -210,7 +216,7 @@ const (
 func (f *File) Seek(frames int64, w Whence) (offset int64, err os.Error) {
 	r := C.sf_seek(f.s, C.sf_count_t(frames), C.int(w))
 	if r == -1 {
-		err = sErrorType(C.sf_error(f.s))
+		err = os.NewError(C.GoString(C.sf_strerror(f.s)))
 	} else {
 		offset = int64(r)
 	}
@@ -220,7 +226,7 @@ func (f *File) Seek(frames int64, w Whence) (offset int64, err os.Error) {
 // The close function closes the file, deallocates its internal buffers and returns a non-nil error value in cas of error
 func (f *File) Close() (err os.Error) {
 	if C.sf_close(f.s) != 0 {
-		err = sErrorType(C.sf_error(f.s))
+		err = os.NewError(C.GoString(C.sf_strerror(f.s)))
 	}
 	if f.closeFd { 
 		nf := os.NewFile(f.fd, "")
@@ -282,7 +288,7 @@ func (f *File) ReadItems(out interface{}) (read int64, err os.Error) {
 
 	read = int64(n)
 	if read < 0 {
-		err = sErrorType(C.sf_error(f.s))
+		err = os.NewError(C.GoString(C.sf_strerror(f.s)))
 	}
 	return
 }
@@ -340,7 +346,7 @@ func (f *File) ReadFrames(out interface{}) (read int64, err os.Error) {
 
 	read = int64(n)
 	if read < 0 {
-		err = sErrorType(C.sf_error(f.s))
+		err = os.NewError(C.GoString(C.sf_strerror(f.s)))
 	}
 	return
 }
@@ -377,7 +383,7 @@ func (f *File) SetString(in string, typ StringType) (err os.Error) {
 	s := C.CString(in)
 	defer C.free(unsafe.Pointer(s))
 	if C.sf_set_string(f.s, C.int(typ), s) != 0 {
-		err = sErrorType(C.sf_error(f.s))
+		err = os.NewError(C.GoString(C.sf_strerror(f.s)))
 	}
 	return
 }
@@ -433,7 +439,7 @@ func (f *File) WriteItems(in interface{}) (written int64, err os.Error) {
 
 	written = int64(n)
 	if int(n) != l {
-		err = sErrorType(C.sf_error(f.s))
+		err = os.NewError(C.GoString(C.sf_strerror(f.s)))
 	}
 	return
 }
@@ -493,7 +499,7 @@ func (f *File) WriteFrames(in interface{}) (written int64, err os.Error) {
 
 	written = int64(n)
 	if int(n) != frames {
-		err = sErrorType(C.sf_error(f.s))
+		err = os.NewError(C.GoString(C.sf_strerror(f.s)))
 	}
 	return
 }

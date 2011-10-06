@@ -242,3 +242,9 @@ func TestGetSetString(t *testing.T) {
 		t.Error("wrong string came back!", s, "!=", si)
 	}
 }
+
+func TestError(t *testing.T) {
+	var i Info
+	_, err := Open("nonexistentfile", Read, &i)
+	t.Log(err)
+}

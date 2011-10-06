@@ -234,7 +234,7 @@ func (f *File) Truncate(count int64) (err os.Error) {
 	r := C.sf_command(f.s, C.SFC_FILE_TRUNCATE, unsafe.Pointer(&count), 8)
 	
 	if r != 0 {
-		err = sErrorType(C.sf_error(f.s))
+		err = os.NewError(C.GoString(C.sf_strerror(f.s)))
 	}
 	return
 }
@@ -254,7 +254,7 @@ func (f *File) SetRawStartOffset(count int64) (err os.Error) {
 	r := C.sf_command(f.s, C.SFC_SET_RAW_START_OFFSET, unsafe.Pointer(&count), 8)
 
 	if r != 0 {
-		err = sErrorType(C.sf_error(f.s))
+		err = os.NewError(C.GoString(C.sf_strerror(f.s)))
 	}
 	return
 }
@@ -277,7 +277,7 @@ func (f *File) GetEmbeddedFileInfo() (offset, length int64, err os.Error) {
 	var s C.SF_EMBED_FILE_INFO
 	r := C.sf_command(f.s, C.SFC_GET_EMBED_FILE_INFO, unsafe.Pointer(&s), C.int(unsafe.Sizeof(s)))
 	if r != 0 {
-		err = sErrorType(C.sf_error(f.s))
+		err = os.NewError(C.GoString(C.sf_strerror(f.s)))
 	}
 	offset = int64(s.offset)
 	length = int64(s.length)
@@ -303,7 +303,7 @@ func (f *File) WavexSetAmbisonic(ambi int) int {
 func (f *File) SetVbrQuality(q float64) (err os.Error) {
 	r := C.sf_command(f.s, C.SFC_SET_VBR_ENCODING_QUALITY, unsafe.Pointer(&q), 8)
 	if r != 0 {
-		err = sErrorType(C.sf_error(f.s))
+		err = os.NewError(C.GoString(C.sf_strerror(f.s)))
 	}
 	return
 }
@@ -415,7 +415,7 @@ func (f *File) SetBroadcastInfo(bi *BroadcastInfo) (err os.Error) {
 	c := cFromBroadcast(bi)
 	r := C.sf_command(f.s, C.SFC_SET_BROADCAST_INFO, unsafe.Pointer(c), C.int(unsafe.Sizeof(*c)))
 	if r == C.SF_FALSE {
-		err = sErrorType(C.sf_error(f.s))
+		err = os.NewError(C.GoString(C.sf_strerror(f.s)))
 	}
 	return
 }	
@@ -571,7 +571,7 @@ const (
 	ChannelMapMax = C.SF_CHANNEL_MAP_MAX
 )
 
-// Returns a slice full of integers detailing the position of each channel in the file.
+// Returns a slice full of integers detailing the position of each channel in the file. err will be non-nil on an actual error
 func (f *File) GetChannelMapInfo() (channels []int32, err os.Error) {
 	channels = make([]int32, f.Format.Channels)
 	r := GenericCmd(f, C.SFC_GET_CHANNEL_MAP_INFO, unsafe.Pointer(&channels[0]), len(channels)*4)
