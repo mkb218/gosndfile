@@ -30,7 +30,7 @@ func TestGetLogInfo(t *testing.T) {
 
 func TestFileCommands(t *testing.T) {
 	var i Info
-	f, err := Open("test/funky.aiff", ReadWrite, &i)
+	f, err := Open("test/funky.aiff", Read, &i)
 	if err != nil {
 		t.Fatalf("open file failed %s", err)
 	}
