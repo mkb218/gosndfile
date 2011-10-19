@@ -21,6 +21,7 @@ type File struct {
 	virtual *virtualIo // really only necessary to keep a reference so GC doesn't eat it
 	fd int
 	closeFd bool
+	closed bool
 }
 
 // sErrorType represents a sndfile API error and grabs error description strings from the API.
@@ -219,14 +220,18 @@ func (f *File) Seek(frames int64, w Whence) (offset int64, err os.Error) {
 
 // The close function closes the file, deallocates its internal buffers and returns a non-nil error value in cas of error
 func (f *File) Close() (err os.Error) {
+	if f.closed { 
+		return nil
+	}
+	
 	if C.sf_close(f.s) != 0 {
-		err = sErrorType(C.sf_error(f.s))
+		err = sErrorType(C.sf_error(nil))
 	}
 	if f.closeFd { 
 		nf := os.NewFile(f.fd, "")
-		nf.Close()
+		err = nf.Close()
 	}
-		
+	f.closed = true
 	return
 }
 
