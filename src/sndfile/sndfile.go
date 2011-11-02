@@ -8,6 +8,8 @@ package sndfile
 import "C"
 
 import (
+	"errors"
+	"io"
 	"os"
 	"unsafe"
 	"reflect"
@@ -16,18 +18,18 @@ import (
 
 // A sound file. Does not conform to io.Reader.
 type File struct {
-	s      *C.SNDFILE
-	Format Info
+	s       *C.SNDFILE
+	Format  Info
 	virtual *virtualIo // really only necessary to keep a reference so GC doesn't eat it
-	fd int
+	fd      int
 	closeFd bool
-	closed bool
+	closed  bool
 }
 
 // sErrorType represents a sndfile API error and grabs error description strings from the API.
 type sErrorType C.int
 
-func (e sErrorType) String() string {
+func (e sErrorType) Error() string {
        return C.GoString(C.sf_error_number(C.int(e)))
 }
 
@@ -42,12 +44,12 @@ const (
 
 // Info is the struct needed to open a file for reading or writing. When opening a file for reading, everything may generally be left zeroed. The only exception to this is the case of RAW files where the caller has to set the samplerate, channels and format fields to valid values.
 type Info struct {
-	Frames       int64
-	Samplerate   int32
-	Channels     int32
-	Format       Format
-	Sections     int32
-	Seekable     int32
+	Frames     int64
+	Samplerate int32
+	Channels   int32
+	Format     Format
+	Sections   int32
+	Seekable   int32
 }
 
 func (i Info) toCinfo() (out *C.SF_INFO) {
@@ -154,7 +156,7 @@ const (
 //When opening a file for write, the caller must fill in structure members samplerate, channels, and format.
 
 // returns a pointer to the file and a nil error if successful. In case of error, err will be non-nil.
-func Open(name string, mode Mode, info *Info) (o *File, err os.Error) {
+func Open(name string, mode Mode, info *Info) (o *File, err rror) {
 	if info == nil {
 		return nil, os.NewError("nil pointer passed to open")
 	}
@@ -179,7 +181,7 @@ func sfclose(f *File) {
 // This probably won't work on windows, because go uses handles instead of integer file descriptors on Windows. Unfortunately I have no way to test.
 // The mode and info arguments, and the return values, are the same as for Open().
 // close_desc should be true if you want the library to close the file descriptor when you close the sndfile.File object
-func OpenFd(fd int, mode Mode, info *Info, close_desc bool) (o *File, err os.Error) {
+func OpenFd(fd int, mode Mode, info *Info, close_desc bool) (o *File, err error) {
 	if info == nil {
 		return nil, os.NewError("nil pointer passed to open")
 	}
@@ -197,7 +199,6 @@ func OpenFd(fd int, mode Mode, info *Info, close_desc bool) (o *File, err os.Err
 	return
 }
 
-
 // This function allows the caller to check if a set of parameters in the Info struct is valid before calling Open in Write mode.
 // FormatCheck returns true if the parameters are valid and false otherwise.
 func FormatCheck(i Info) bool {
@@ -214,7 +215,7 @@ const (
 )
 
 //The file seek functions work much like lseek in unistd.h with the exception that the non-audio data is ignored and the seek only moves within the audio data section of the file. In addition, seeks are defined in number of (multichannel) frames. Therefore, a seek in a stereo file from the current position forward with an offset of 1 would skip forward by one sample of both channels. This function returns the new offset, and a non-nil error value if unsuccessful
-func (f *File) Seek(frames int64, w Whence) (offset int64, err os.Error) {
+func (f *File) Seek(frames int64, w Whence) (offset int64, err error) {
 	r := C.sf_seek(f.s, C.sf_count_t(frames), C.int(w))
 	if r == -1 {
 		err = os.NewError(C.GoString(C.sf_strerror(f.s)))
@@ -225,15 +226,15 @@ func (f *File) Seek(frames int64, w Whence) (offset int64, err os.Error) {
 }
 
 // The close function closes the file, deallocates its internal buffers and returns a non-nil error value in cas of error
-func (f *File) Close() (err os.Error) {
-	if f.closed { 
+func (f *File) Close() (err error) {
+	if f.closed {
 		return nil
 	}
-	
+
 	if C.sf_close(f.s) != 0 {
 		err = os.NewError(C.GoString(C.sf_strerror(f.s)))
 	}
-	if f.closeFd { 
+	if f.closeFd {
 		nf := os.NewFile(f.fd, "")
 		err = nf.Close()
 	}
@@ -255,10 +256,10 @@ Returns the number of items read. Unless the end of the file was reached during 
 out must be a slice or array of int, int16, int32, float32, or float64.
 
 */
-func (f *File) ReadItems(out interface{}) (read int64, err os.Error) {
+func (f *File) ReadItems(out interface{}) (read int64, err error) {
 	t := reflect.TypeOf(out)
 	if t.Kind() != reflect.Array && t.Kind() != reflect.Slice {
-		os.NewError("You need to give me an array!")
+		errors.New("You need to give me an array!")
 	}
 
 	v := reflect.ValueOf(out)
@@ -281,10 +282,10 @@ func (f *File) ReadItems(out interface{}) (read int64, err os.Error) {
 		case 16: // doubtful
 			n = C.sf_readf_short(f.s, (*C.short)(unsafe.Pointer(o.Index(0).Addr().Pointer())), C.sf_count_t(l))
 		default:
-			err = os.NewError("Unsupported type in read buffer, needs (u)int16, (u)int32, or float type")
+			err = errors.New("Unsupported type in read buffer, needs (u)int16, (u)int32, or float type")
 		}
 	default:
-		err = os.NewError("Unsupported type in read buffer, needs (u)int16, (u)int32, or float type")
+		err = errors.New("Unsupported type in read buffer, needs (u)int16, (u)int32, or float type")
 	}
 	if err != nil {
 		read = -1
@@ -301,10 +302,10 @@ func (f *File) ReadItems(out interface{}) (read int64, err os.Error) {
 /*The file read frames functions fill the array pointed to by out with the requested number of frames of data. The array must be large enough to hold the product of frames and the number of channels.
 
 The sf_readf_XXXX functions return the number of frames read. Unless the end of the file was reached during the read, the return value should equal the number of frames requested. Attempts to read beyond the end of the file will not result in an error but will cause the sf_readf_XXXX functions to return less than the number of frames requested or 0 if already at the end of the file.*/
-func (f *File) ReadFrames(out interface{}) (read int64, err os.Error) {
+func (f *File) ReadFrames(out interface{}) (read int64, err error) {
 	t := reflect.TypeOf(out)
 	if t.Kind() != reflect.Array && t.Kind() != reflect.Slice {
-		os.NewError("You need to give me an array!")
+		errors.New("You need to give me an array!")
 	}
 
 	v := reflect.ValueOf(out)
@@ -312,7 +313,7 @@ func (f *File) ReadFrames(out interface{}) (read int64, err os.Error) {
 	o := v.Slice(0, l)
 	frames := l / int(f.Format.Channels)
 	if frames < 1 {
-		err = os.EOF
+		err = io.EOF
 		return
 	}
 	var n C.sf_count_t
@@ -339,10 +340,10 @@ func (f *File) ReadFrames(out interface{}) (read int64, err os.Error) {
 		case 16: // doubtful
 			n = C.sf_readf_short(f.s, (*C.short)(p), C.sf_count_t(frames))
 		default:
-			err = os.NewError("Unsupported type in read buffer, needs (u)int16, (u)int32, or float type")
+			err = errors.New("Unsupported type in read buffer, needs (u)int16, (u)int32, or float type")
 		}
 	default:
-		err = os.NewError("Unsupported type in read buffer, needs (u)int16, (u)int32, or float type")
+		err = errors.New("Unsupported type in read buffer, needs (u)int16, (u)int32, or float type")
 	}
 	if err != nil {
 		read = -1
@@ -384,7 +385,7 @@ func (f *File) GetString(typ StringType) (out string) {
 }
 
 //The SetString() method sets the string data in a file. It returns nil on success and non-nil on error.
-func (f *File) SetString(in string, typ StringType) (err os.Error) {
+func (f *File) SetString(in string, typ StringType) (err error) {
 	s := C.CString(in)
 	defer C.free(unsafe.Pointer(s))
 	if C.sf_set_string(f.s, C.int(typ), s) != 0 {
@@ -399,12 +400,12 @@ func (f *File) SetString(in string, typ StringType) (err os.Error) {
 //
 //Returns the number of items written (which should be the same as the length of the input parameter). err will be nil, except in case of failure
 
-func (f *File) WriteItems(in interface{}) (written int64, err os.Error) {
+func (f *File) WriteItems(in interface{}) (written int64, err error) {
 	t := reflect.TypeOf(in)
 	if t.Kind() != reflect.Array && t.Kind() != reflect.Slice {
-		os.NewError("You need to give me an array!")
+		errors.New("You need to give me an array!")
 	}
-	
+
 	v := reflect.ValueOf(in)
 	l := v.Len()
 	o := v.Slice(0, l)
@@ -432,10 +433,10 @@ func (f *File) WriteItems(in interface{}) (written int64, err os.Error) {
 		case 16: // doubtful
 			n = C.sf_write_short(f.s, (*C.short)(p), C.sf_count_t(l))
 		default:
-			err = os.NewError("Unsupported type in read buffer, needs (u)int16, (u)int32, or float type")
+			err = errors.New("Unsupported type in read buffer, needs (u)int16, (u)int32, or float type")
 		}
 	default:
-		err = os.NewError("Unsupported type in read buffer, needs (u)int16, (u)int32, or float type")
+		err = errors.New("Unsupported type in read buffer, needs (u)int16, (u)int32, or float type")
 	}
 	if err != nil {
 		written = -1
@@ -454,10 +455,10 @@ func (f *File) WriteItems(in interface{}) (written int64, err os.Error) {
 //It is important to note that the data type used by the calling program and the data format of the file do not need to be the same. For instance, it is possible to open a 16 bit PCM encoded WAV file and write the data from a []float32. The library seamlessly converts between the two formats on-the-fly.
 //
 //Returns the number of frames written (which should be the same as the length of the input parameter divided by the number of channels). err wil be nil except in case of failure
-func (f *File) WriteFrames(in interface{}) (written int64, err os.Error) {
+func (f *File) WriteFrames(in interface{}) (written int64, err error) {
 	t := reflect.TypeOf(in)
 	if t.Kind() != reflect.Array && t.Kind() != reflect.Slice {
-		os.NewError("You need to give me an array!")
+		errors.New("You need to give me an array!")
 	}
 
 	v := reflect.ValueOf(in)
@@ -465,7 +466,7 @@ func (f *File) WriteFrames(in interface{}) (written int64, err os.Error) {
 	o := v.Slice(0, l)
 	frames := l / int(f.Format.Channels)
 	if frames < 1 {
-		err = os.EOF
+		err = io.EOF
 		return
 	}
 	var n C.sf_count_t
@@ -492,10 +493,10 @@ func (f *File) WriteFrames(in interface{}) (written int64, err os.Error) {
 		case 16: // doubtful
 			n = C.sf_writef_short(f.s, (*C.short)(p), C.sf_count_t(frames))
 		default:
-			err = os.NewError("Unsupported type in written buffer, needs (u)int16, (u)int32, or float type")
+			err = errors.New("Unsupported type in written buffer, needs (u)int16, (u)int32, or float type")
 		}
 	default:
-		err = os.NewError("Unsupported type in written buffer, needs (u)int16, (u)int32, or float type")
+		err = errors.New("Unsupported type in written buffer, needs (u)int16, (u)int32, or float type")
 	}
 	if err != nil {
 		written = -1

@@ -6,26 +6,29 @@ package sndfile
 // #include <string.h>
 import "C"
 
-import "strings"
+import (
+	"errors"
+	"strings"
+)
 import "unsafe"
-import "os"
+
 import "fmt"
 
 // GetLibVersion retrieves the version of the library as a string
-func GetLibVersion() (s string, err os.Error) {
+func GetLibVersion() (s string, err error) {
 	l := C.sf_command(nil, C.SFC_GET_LIB_VERSION, nil, 0)
 	c := make([]byte, l)
 	m := C.sf_command(nil, C.SFC_GET_LIB_VERSION, unsafe.Pointer(&c[0]), l)
 
 	if m != l {
-		err = os.NewError(fmt.Sprintf("GetLibVersion: expected %d bytes in string, recv'd %d", l, m))
+		err = errors.New(fmt.Sprintf("GetLibVersion: expected %d bytes in string, recv'd %d", l, m))
 	}
 	s = string(c)
 	return
 }
 
 // Retrieve the log buffer generated when opening a file as a string. This log buffer can often contain a good reason for why libsndfile failed to open a particular file.
-func (f *File) GetLogInfo() (s string, err os.Error) {
+func (f *File) GetLogInfo() (s string, err error) {
 	l := C.sf_command(f.s, C.SFC_GET_LOG_INFO, nil, 0)
 	c := make([]byte, l)
 	m := C.sf_command(f.s, C.SFC_GET_LOG_INFO, unsafe.Pointer(&c[0]), l)
@@ -38,7 +41,7 @@ func (f *File) GetLogInfo() (s string, err os.Error) {
 }
 
 // Retrieve the measured maximum signal value. This involves reading through the whole file which can be slow on large files.
-func (f *File) CalcSignalMax() (ret float64, err os.Error) {
+func (f *File) CalcSignalMax() (ret float64, err error) {
 	e := C.sf_command(f.s, C.SFC_CALC_SIGNAL_MAX, unsafe.Pointer(&ret), 8)
 	if e != 0 {
 		err = sErrorType(e)
@@ -47,7 +50,7 @@ func (f *File) CalcSignalMax() (ret float64, err os.Error) {
 }
 
 // Retrieve the measured normalised maximum signal value. This involves reading through the whole file which can be slow on large files.
-func (f *File) CalcNormSignalMax() (ret float64, err os.Error) {
+func (f *File) CalcNormSignalMax() (ret float64, err error) {
 	e := C.sf_command(f.s, C.SFC_CALC_NORM_SIGNAL_MAX, unsafe.Pointer(&ret), 8)
 	if e != 0 {
 		err = sErrorType(e)
@@ -56,7 +59,7 @@ func (f *File) CalcNormSignalMax() (ret float64, err os.Error) {
 }
 
 //Calculate the peak value (ie a single number) for each channel. This involves reading through the whole file which can be slow on large files.
-func (f *File) CalcMaxAllChannels() (ret []float64, err os.Error) {
+func (f *File) CalcMaxAllChannels() (ret []float64, err error) {
 	c := f.Format.Channels
 	ret = make([]float64, c)
 	e := C.sf_command(f.s, C.SFC_CALC_MAX_ALL_CHANNELS, unsafe.Pointer(&ret[0]), C.int(c*8))
@@ -67,7 +70,7 @@ func (f *File) CalcMaxAllChannels() (ret []float64, err os.Error) {
 }
 
 //Calculate the normalised peak for each channel. This involves reading through the whole file which can be slow on large files.
-func (f *File) CalcNormMaxAllChannels() (ret []float64, err os.Error) {
+func (f *File) CalcNormMaxAllChannels() (ret []float64, err error) {
 	c := f.Format.Channels
 	ret = make([]float64, c)
 	e := C.sf_command(f.s, C.SFC_CALC_NORM_MAX_ALL_CHANNELS, unsafe.Pointer(&ret[0]), C.int(c*8))
@@ -230,9 +233,9 @@ func (f *File) SetUpdateHeaderAuto(set bool) bool {
 }
 
 // Truncates a file to /count/ frames.  After this command, both the read and the write pointer will be at the new end of the file. This command will fail (returning non-zero) if the requested truncate position is beyond the end of the file.
-func (f *File) Truncate(count int64) (err os.Error) {
+func (f *File) Truncate(count int64) (err error) {
 	r := C.sf_command(f.s, C.SFC_FILE_TRUNCATE, unsafe.Pointer(&count), 8)
-	
+
 	if r != 0 {
 		err = os.NewError(C.GoString(C.sf_strerror(f.s)))
 	}
@@ -241,16 +244,16 @@ func (f *File) Truncate(count int64) (err os.Error) {
 
 func (f *File) genericBoolBoolCmd(cmd C.int, i bool) bool {
 	ib := C.SF_FALSE
-	if i { 
+	if i {
 		ib = C.SF_TRUE
 	}
-	
+
 	n := C.sf_command(f.s, cmd, nil, C.int(ib))
 	return (n == C.SF_TRUE)
 }
 
 //Change the data start offset for files opened up as SF_FORMAT_RAW. libsndfile implements this but it appears to not do anything useful that you can't accomplish with seek, so consider this deprecated.
-func (f *File) SetRawStartOffset(count int64) (err os.Error) {
+func (f *File) SetRawStartOffset(count int64) (err error) {
 	r := C.sf_command(f.s, C.SFC_SET_RAW_START_OFFSET, unsafe.Pointer(&count), 8)
 
 	if r != 0 {
@@ -273,7 +276,7 @@ func (f *File) GetClipping(clip bool) bool {
 //The value of the offset return value will be the offsets in bytes from the start of the outer file to the start of the embedded audio file.
 //The value of the length return value will be the length in bytes of the embedded file.
 // Untested.
-func (f *File) GetEmbeddedFileInfo() (offset, length int64, err os.Error) {
+func (f *File) GetEmbeddedFileInfo() (offset, length int64, err error) {
 	var s C.SF_EMBED_FILE_INFO
 	r := C.sf_command(f.s, C.SFC_GET_EMBED_FILE_INFO, unsafe.Pointer(&s), C.int(unsafe.Sizeof(s)))
 	if r != 0 {
@@ -281,7 +284,7 @@ func (f *File) GetEmbeddedFileInfo() (offset, length int64, err os.Error) {
 	}
 	offset = int64(s.offset)
 	length = int64(s.length)
-	return 
+	return
 }
 
 const AmbisonicNone int = int(C.SF_AMBISONIC_NONE)
@@ -300,7 +303,7 @@ func (f *File) WavexSetAmbisonic(ambi int) int {
 }
 
 //Set the the Variable Bit Rate encoding quality. The encoding quality value should be between 0.0 (lowest quality) and 1.0 (highest quality). Untested.
-func (f *File) SetVbrQuality(q float64) (err os.Error) {
+func (f *File) SetVbrQuality(q float64) (err error) {
 	r := C.sf_command(f.s, C.SFC_SET_VBR_ENCODING_QUALITY, unsafe.Pointer(&q), 8)
 	if r != 0 {
 		err = os.NewError(C.GoString(C.sf_strerror(f.s)))
@@ -316,23 +319,23 @@ func (f *File) RawNeedsEndianSwap() bool {
 }
 
 type BroadcastInfo struct {
-	Description string
-	Originator string
+	Description          string
+	Originator           string
 	Originator_reference string
-	Origination_date string
-	Origination_time string
-	Time_reference_low uint32
-	Time_reference_high uint32
-	Version uint16
-	Umid string
-	Coding_history []int8
+	Origination_date     string
+	Origination_time     string
+	Time_reference_low   uint32
+	Time_reference_high  uint32
+	Version              uint16
+	Umid                 string
+	Coding_history       []int8
 }
 
 func goStringFromArr(c []C.char) string {
 	s := make([]byte, len(c))
 	for i, r := range c {
 		s[i] = byte(r)
-	} 
+	}
 	return string(s)
 }
 
@@ -362,7 +365,7 @@ func broadcastFromC(c *C.SF_BROADCAST_INFO) *BroadcastInfo {
 		if i >= int(c.coding_history_size) {
 			break
 		}
-		bi.Coding_history = append(bi.Coding_history,int8(r))
+		bi.Coding_history = append(bi.Coding_history, int8(r))
 	}
 	return bi
 }
@@ -370,14 +373,14 @@ func broadcastFromC(c *C.SF_BROADCAST_INFO) *BroadcastInfo {
 // Retrieve the Broadcast Extension Chunk from WAV (and related) files.
 func (f *File) GetBroadcastInfo() (bi *BroadcastInfo, ok bool) {
 	bic := new(C.SF_BROADCAST_INFO)
-	
+
 	r := C.sf_command(f.s, C.SFC_GET_BROADCAST_INFO, unsafe.Pointer(bic), C.int(unsafe.Sizeof(*bic)))
 	if r == C.SF_TRUE {
 		bi = broadcastFromC(bic)
 		ok = true
 	}
 	return
-}	
+}
 
 func arrFromGoString(arr []C.char, src string) {
 	for i, r := range src {
@@ -411,34 +414,34 @@ func cFromBroadcast(bi *BroadcastInfo) (c *C.SF_BROADCAST_INFO) {
 }
 
 // Set the Broadcast Extension Chunk from WAV (and related) files.
-func (f *File) SetBroadcastInfo(bi *BroadcastInfo) (err os.Error) {
+func (f *File) SetBroadcastInfo(bi *BroadcastInfo) (err error) {
 	c := cFromBroadcast(bi)
 	r := C.sf_command(f.s, C.SFC_SET_BROADCAST_INFO, unsafe.Pointer(c), C.int(unsafe.Sizeof(*c)))
 	if r == C.SF_FALSE {
 		err = os.NewError(C.GoString(C.sf_strerror(f.s)))
 	}
 	return
-}	
+}
 
 type LoopMode int
 
 const (
-	None LoopMode = C.SF_LOOP_NONE
-	Forward = C.SF_LOOP_FORWARD
-	Backward = C.SF_LOOP_BACKWARD
-	Alternating = C.SF_LOOP_ALTERNATING
-	)
+	None        LoopMode = C.SF_LOOP_NONE
+	Forward              = C.SF_LOOP_FORWARD
+	Backward             = C.SF_LOOP_BACKWARD
+	Alternating          = C.SF_LOOP_ALTERNATING
+)
 
 type LoopInfo struct {
 	TimeSig struct {
-		Numerator int16 // any positive integer
+		Numerator   int16 // any positive integer
 		Denominator int16 // any positive power of 2
 	}
-	Mode LoopMode
-	Beats int // not amount of quarter notes. a full bar of 7/8 is 7 bears
-	Bpm float32 // Suggestion
-	RootKey int // MIDI Note
-	Future [6]int // nuffink
+	Mode    LoopMode
+	Beats   int     // not amount of quarter notes. a full bar of 7/8 is 7 bears
+	Bpm     float32 // Suggestion
+	RootKey int     // MIDI Note
+	Future  [6]int  // nuffink
 }
 
 //Retrieve loop information for file including time signature, length in beats and original MIDI base note
@@ -463,13 +466,13 @@ func (f *File) GetLoopInfo() (i *LoopInfo) {
 }
 
 type Instrument struct {
-	Gain int
+	Gain             int
 	Basenote, Detune int8
-	Velocity [2]int8 // low byte is index 0
-	Key [2]int8 // low byte is index 0
-	LoopCount int
-	Loops [16]struct {
-		Mode LoopMode
+	Velocity         [2]int8 // low byte is index 0
+	Key              [2]int8 // low byte is index 0
+	LoopCount        int
+	Loops            [16]struct {
+		Mode              LoopMode
 		Start, End, Count uint
 	}
 }
@@ -524,7 +527,7 @@ func (f *File) SetInstrument(i *Instrument) bool {
 		c.loops[index].mode = C.int(None)
 		// why is this necessary? libsndfile doesn't check loopcount for AIFF
 	}
-		
+
 	r := C.sf_command(f.s, C.SFC_SET_INSTRUMENT, unsafe.Pointer(c), C.int(unsafe.Sizeof(*c)))
 	return (r == C.SF_TRUE)
 }

@@ -27,7 +27,7 @@ func testGetLength(i interface{}) int64 {
 	s, err := ud.f.Stat()
 	if err != nil {
 		// is this even possible?
-		ud.t.Errorf("couldn't get length for some reason %s", err.String())
+		ud.t.Errorf("couldn't get length for some reason %s", err)
 	}
 	return int64(s.Size)
 }
@@ -46,7 +46,7 @@ func testSeek(offset int64, whence Whence, i interface{}) int64 {
 	
 	o, err := ud.f.Seek(offset, w)
 	if err != nil {
-		ud.t.Errorf("Couldn't seek for some reason: %s", err.String())
+		ud.t.Errorf("Couldn't seek for some reason: %s", err)
 	}
 	return o
 }
@@ -56,7 +56,7 @@ func testRead(buf []byte, i interface{}) int64 {
 	ud := getUd(i)
 	read, err := ud.f.Read(buf)
 	if err != nil {
-		ud.t.Errorf("couldn't read from file %s", err.String())
+		ud.t.Errorf("couldn't read from file %s", err)
 	}
 	return int64(read)
 }
@@ -66,7 +66,7 @@ func testWrite(buf []byte, i interface{}) int64 {
 	ud := getUd(i)
 	wrote, err := ud.f.Write(buf)
 	if err != nil {
-		ud.t.Errorf("couldn't write to file %v %d %s", ud.f, wrote, err.String())
+		ud.t.Errorf("couldn't write to file %v %d %s", ud.f, wrote, err)
 	}
 	return int64(wrote)
 }
@@ -76,7 +76,7 @@ func testTell(i interface{}) int64 {
 	ud := getUd(i)
 	o, err := ud.f.Seek(0, os.SEEK_CUR)
 	if err != nil {
-		ud.t.Errorf("couldn't tell! %s", err.String())
+		ud.t.Errorf("couldn't tell! %s", err)
 	}
 	return o
 }
@@ -86,7 +86,7 @@ func testTell(i interface{}) int64 {
 func TestVirtualRead(t *testing.T) {
 	f, err := os.Open("test/ok.aiff")
 	if err != nil {
-		t.Fatalf("couldn't open input file %s", err.String())
+		t.Fatalf("couldn't open input file %s", err)
 	}
 	
 	var vi VirtualIo
@@ -115,7 +115,7 @@ func TestVirtualRead(t *testing.T) {
 func TestVirtualWrite(t *testing.T) {
 	f, err := os.Create("test/funky2.aiff")
 	if err != nil {
-		t.Fatalf("couldn't open input file test/funky2.aiff %s", err.String())
+		t.Fatalf("couldn't open input file test/funky2.aiff %s", err)
 	}
 	
 	var vi VirtualIo
@@ -338,7 +338,7 @@ func TestVirtualWrite(t *testing.T) {
 	var ri Info
 	_, err = Open("test/funky.aiff", Read, &ri)
 	if err != nil {
-		t.Fatalf("couldn't open input file %s", err.String())
+		t.Fatalf("couldn't open input file %s", err)
 	}
 	
 //	fmt.Println(ri)
