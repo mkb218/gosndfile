@@ -29,7 +29,7 @@ func testGetLength(i interface{}) int64 {
 		// is this even possible?
 		ud.t.Errorf("couldn't get length for some reason %s", err)
 	}
-	return int64(s.Size)
+	return int64(s.Size())
 }
 
 func testSeek(offset int64, whence Whence, i interface{}) int64 {

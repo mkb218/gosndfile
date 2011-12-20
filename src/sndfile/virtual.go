@@ -6,6 +6,7 @@ import "C"
 //import "fmt"
 import "runtime"
 import "unsafe"
+import "errors"
 
 type VIO_get_filelen func(interface{}) int64
 type VIO_seek func(int64, Whence, interface{}) int64
@@ -28,7 +29,7 @@ func OpenVirtual(v VirtualIo, mode Mode, info *Info) (f *File, err error) {
 		f.Format = fromCinfo(ci)
 		*info = f.Format
 	} else {
-		err = os.NewError(C.GoString(C.sf_strerror(nil)))
+		err = errors.New(C.GoString(C.sf_strerror(nil)))
 	}
 	runtime.SetFinalizer(f, sfclose)
 	return

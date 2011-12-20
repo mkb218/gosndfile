@@ -395,7 +395,7 @@ func TestNormalization(t *testing.T) {
 
 func floatEqual(f1, f2 interface{}) bool {
 	// assume []float<size>
-	switch t := f1.(type) {
+	switch f1.(type) {
 	case []float64:
 		f1v := f1.([]float64)
 		f2v := f2.([]float64)
