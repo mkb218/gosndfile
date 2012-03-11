@@ -1,6 +1,6 @@
 package sndfile
 
-// #cgo LDFLAGS: -lsndfile
+// #cgo pkg-config: sndfile
 // #include <stdlib.h>
 // #include <sndfile.h>
 // #include <string.h>

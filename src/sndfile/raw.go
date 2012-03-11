@@ -1,6 +1,6 @@
 package sndfile
 
-// #cgo LDFLAGS: -lsndfile
+// #cgo pkg-config: sndfile
 // #import <sndfile.h>
 import "C"
 

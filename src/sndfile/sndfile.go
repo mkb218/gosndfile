@@ -1,8 +1,8 @@
 package sndfile
 
-// The sndfile package is a binding for libsndfile. It packages the libsndfile API in a go-like manner. Note for macports users: set environment variables CGO_CFLAGS and CGO_LDFLAGS to "-I/opt/local/include" and "-L/opt/local/lib" respectively.
+// The sndfile package is a binding for libsndfile. It packages the libsndfile API in a go-like manner.
 
-// #cgo LDFLAGS: -lsndfile
+// #cgo pkg-config: sndfile
 // #include <stdlib.h>
 // #include <sndfile.h>
 import "C"
@@ -21,7 +21,7 @@ type File struct {
 	s       *C.SNDFILE
 	Format  Info
 	virtual *virtualIo // really only necessary to keep a reference so GC doesn't eat it
-	fd      int
+	fd      uintptr
 	closeFd bool
 	closed  bool
 }
@@ -181,7 +181,7 @@ func sfclose(f *File) {
 // This probably won't work on windows, because go uses handles instead of integer file descriptors on Windows. Unfortunately I have no way to test.
 // The mode and info arguments, and the return values, are the same as for Open().
 // close_desc should be true if you want the library to close the file descriptor when you close the sndfile.File object
-func OpenFd(fd int, mode Mode, info *Info, close_desc bool) (o *File, err error) {
+func OpenFd(fd uintptr, mode Mode, info *Info, close_desc bool) (o *File, err error) {
 	if info == nil {
 		return nil, errors.New("nil pointer passed to open")
 	}
@@ -225,7 +225,7 @@ func (f *File) Seek(frames int64, w Whence) (offset int64, err error) {
 	return
 }
 
-// The close function closes the file, deallocates its internal buffers and returns a non-nil error value in cas of error
+// The close function closes the file, deallocates its internal buffers and returns a non-nil error value in case of error
 func (f *File) Close() (err error) {
 	if f.closed {
 		return nil

@@ -20,7 +20,7 @@ sf_count_t  gocall_read        (void *ptr, sf_count_t count, void *user_data) {
 
 sf_count_t  gocall_write       (const void *ptr, sf_count_t count, void *user_data) {
 	// printf("write %p\n", gsfWrite);
-	return gsfWrite(ptr, count, user_data);
+	return gsfWrite((void *)ptr, count, user_data);
 }
 
 sf_count_t  gocall_tell        (void *user_data) {
