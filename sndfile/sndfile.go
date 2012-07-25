@@ -268,19 +268,19 @@ func (f *File) ReadItems(out interface{}) (read int64, err error) {
 	var n C.sf_count_t
 	switch t.Elem().Kind() {
 	case reflect.Int16:
-		n = C.sf_readf_short(f.s, (*C.short)(unsafe.Pointer(o.Index(0).Addr().Pointer())), C.sf_count_t(l))
+		n = C.sf_read_short(f.s, (*C.short)(unsafe.Pointer(o.Index(0).Addr().Pointer())), C.sf_count_t(l))
 	case reflect.Int32:
-		n = C.sf_readf_int(f.s, (*C.int)(unsafe.Pointer(o.Index(0).Addr().Pointer())), C.sf_count_t(l))
+		n = C.sf_read_int(f.s, (*C.int)(unsafe.Pointer(o.Index(0).Addr().Pointer())), C.sf_count_t(l))
 	case reflect.Float32:
-		n = C.sf_readf_float(f.s, (*C.float)(unsafe.Pointer(o.Index(0).Addr().Pointer())), C.sf_count_t(l))
+		n = C.sf_read_float(f.s, (*C.float)(unsafe.Pointer(o.Index(0).Addr().Pointer())), C.sf_count_t(l))
 	case reflect.Float64:
-		n = C.sf_readf_double(f.s, (*C.double)(unsafe.Pointer(o.Index(0).Addr().Pointer())), C.sf_count_t(l))
+		n = C.sf_read_double(f.s, (*C.double)(unsafe.Pointer(o.Index(0).Addr().Pointer())), C.sf_count_t(l))
 	case reflect.Int:
 		switch t.Bits() {
 		case 32:
-			n = C.sf_readf_int(f.s, (*C.int)(unsafe.Pointer(o.Index(0).Addr().Pointer())), C.sf_count_t(l))
+			n = C.sf_read_int(f.s, (*C.int)(unsafe.Pointer(o.Index(0).Addr().Pointer())), C.sf_count_t(l))
 		case 16: // doubtful
-			n = C.sf_readf_short(f.s, (*C.short)(unsafe.Pointer(o.Index(0).Addr().Pointer())), C.sf_count_t(l))
+			n = C.sf_read_short(f.s, (*C.short)(unsafe.Pointer(o.Index(0).Addr().Pointer())), C.sf_count_t(l))
 		default:
 			err = errors.New("Unsupported type in read buffer, needs (u)int16, (u)int32, or float type")
 		}
