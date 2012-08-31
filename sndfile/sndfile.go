@@ -170,12 +170,8 @@ func Open(name string, mode Mode, info *Info) (o *File, err error) {
 	}
 	*info = fromCinfo(ci)
 	o.Format = *info
-	runtime.SetFinalizer(o, sfclose)
+	runtime.SetFinalizer(o, (*File).Close)
 	return
-}
-
-func sfclose(f *File) {
-	f.Close()
 }
 
 // This probably won't work on windows, because go uses handles instead of integer file descriptors on Windows. Unfortunately I have no way to test.
@@ -195,7 +191,7 @@ func OpenFd(fd uintptr, mode Mode, info *Info, close_desc bool) (o *File, err er
 	}
 	*info = fromCinfo(ci)
 	o.Format = *info
-	runtime.SetFinalizer(o, sfclose)
+	runtime.SetFinalizer(o, (*File).Close)
 	return
 }
 
@@ -227,10 +223,6 @@ func (f *File) Seek(frames int64, w Whence) (offset int64, err error) {
 
 // The close function closes the file, deallocates its internal buffers and returns a non-nil error value in case of error
 func (f *File) Close() (err error) {
-	if f.closed {
-		return nil
-	}
-
 	if C.sf_close(f.s) != 0 {
 		err = errors.New(C.GoString(C.sf_strerror(f.s)))
 	}
@@ -238,7 +230,7 @@ func (f *File) Close() (err error) {
 		nf := os.NewFile(f.fd, "")
 		err = nf.Close()
 	}
-	f.closed = true
+	runtime.SetFinalizer(f, nil)
 	return
 }
 
