@@ -311,21 +311,15 @@ func (f *File) ReadFrames(out interface{}) (read int64, err error) {
 	var n C.sf_count_t
 	p := unsafe.Pointer(o.Index(0).Addr().Pointer())
 	switch t.Elem().Kind() {
-	case reflect.Int16:
-		fallthrough
-	case reflect.Uint16:
+	case reflect.Int16, reflect.Uint16:
 		n = C.sf_readf_short(f.s, (*C.short)(p), C.sf_count_t(frames))
-	case reflect.Int32:
-		fallthrough
-	case reflect.Uint32:
+	case reflect.Int32, reflect.Uint32:
 		n = C.sf_readf_int(f.s, (*C.int)(p), C.sf_count_t(frames))
 	case reflect.Float32:
 		n = C.sf_readf_float(f.s, (*C.float)(p), C.sf_count_t(frames))
 	case reflect.Float64:
 		n = C.sf_readf_double(f.s, (*C.double)(p), C.sf_count_t(frames))
-	case reflect.Int:
-		fallthrough
-	case reflect.Uint:
+	case reflect.Int,reflect.Uint:
 		switch t.Bits() {
 		case 32:
 			n = C.sf_readf_int(f.s, (*C.int)(p), C.sf_count_t(frames))
@@ -404,21 +398,15 @@ func (f *File) WriteItems(in interface{}) (written int64, err error) {
 	var n C.sf_count_t
 	p := unsafe.Pointer(o.Index(0).Addr().Pointer())
 	switch t.Elem().Kind() {
-	case reflect.Int16:
-		fallthrough
-	case reflect.Uint16:
+	case reflect.Int16, reflect.Uint16:
 		n = C.sf_write_short(f.s, (*C.short)(p), C.sf_count_t(l))
-	case reflect.Int32:
-		fallthrough
-	case reflect.Uint32:
+	case reflect.Int32, reflect.Uint32:
 		n = C.sf_write_int(f.s, (*C.int)(p), C.sf_count_t(l))
 	case reflect.Float32:
 		n = C.sf_write_float(f.s, (*C.float)(p), C.sf_count_t(l))
 	case reflect.Float64:
 		n = C.sf_write_double(f.s, (*C.double)(p), C.sf_count_t(l))
-	case reflect.Int:
-		fallthrough
-	case reflect.Uint:
+	case reflect.Int,reflect.Uint:
 		switch t.Bits() {
 		case 32:
 			n = C.sf_write_int(f.s, (*C.int)(p), C.sf_count_t(l))
@@ -464,21 +452,15 @@ func (f *File) WriteFrames(in interface{}) (written int64, err error) {
 	var n C.sf_count_t
 	p := unsafe.Pointer(o.Index(0).Addr().Pointer())
 	switch t.Elem().Kind() {
-	case reflect.Int16:
-		fallthrough
-	case reflect.Uint16:
+	case reflect.Int16,reflect.Uint16:
 		n = C.sf_writef_short(f.s, (*C.short)(p), C.sf_count_t(frames))
-	case reflect.Int32:
-		fallthrough
-	case reflect.Uint32:
+	case reflect.Int32,reflect.Uint32:
 		n = C.sf_writef_int(f.s, (*C.int)(p), C.sf_count_t(frames))
 	case reflect.Float32:
 		n = C.sf_writef_float(f.s, (*C.float)(p), C.sf_count_t(frames))
 	case reflect.Float64:
 		n = C.sf_writef_double(f.s, (*C.double)(p), C.sf_count_t(frames))
-	case reflect.Int:
-		fallthrough
-	case reflect.Uint:
+	case reflect.Int,reflect.Uint:
 		switch t.Bits() {
 		case 32:
 			n = C.sf_writef_int(f.s, (*C.int)(p), C.sf_count_t(frames))
