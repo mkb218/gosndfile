@@ -1,7 +1,7 @@
 package sndfile
 
 // #cgo pkg-config: sndfile
-// #import <sndfile.h>
+// #include <sndfile.h>
 import "C"
 
 import "unsafe"
