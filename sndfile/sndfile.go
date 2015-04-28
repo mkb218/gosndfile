@@ -251,7 +251,7 @@ out must be a slice or array of int, int16, int32, float32, or float64.
 func (f *File) ReadItems(out interface{}) (read int64, err error) {
 	t := reflect.TypeOf(out)
 	if t.Kind() != reflect.Array && t.Kind() != reflect.Slice {
-		errors.New("You need to give me an array!")
+		return -1, errors.New("You need to give me an array!")
 	}
 
 	v := reflect.ValueOf(out)
@@ -297,7 +297,7 @@ The sf_readf_XXXX functions return the number of frames read. Unless the end of 
 func (f *File) ReadFrames(out interface{}) (read int64, err error) {
 	t := reflect.TypeOf(out)
 	if t.Kind() != reflect.Array && t.Kind() != reflect.Slice {
-		errors.New("You need to give me an array!")
+		return -1, errors.New("You need to give me an array!")
 	}
 
 	v := reflect.ValueOf(out)
@@ -319,7 +319,7 @@ func (f *File) ReadFrames(out interface{}) (read int64, err error) {
 		n = C.sf_readf_float(f.s, (*C.float)(p), C.sf_count_t(frames))
 	case reflect.Float64:
 		n = C.sf_readf_double(f.s, (*C.double)(p), C.sf_count_t(frames))
-	case reflect.Int,reflect.Uint:
+	case reflect.Int, reflect.Uint:
 		switch t.Bits() {
 		case 32:
 			n = C.sf_readf_int(f.s, (*C.int)(p), C.sf_count_t(frames))
@@ -406,7 +406,7 @@ func (f *File) WriteItems(in interface{}) (written int64, err error) {
 		n = C.sf_write_float(f.s, (*C.float)(p), C.sf_count_t(l))
 	case reflect.Float64:
 		n = C.sf_write_double(f.s, (*C.double)(p), C.sf_count_t(l))
-	case reflect.Int,reflect.Uint:
+	case reflect.Int, reflect.Uint:
 		switch t.Bits() {
 		case 32:
 			n = C.sf_write_int(f.s, (*C.int)(p), C.sf_count_t(l))
@@ -452,15 +452,15 @@ func (f *File) WriteFrames(in interface{}) (written int64, err error) {
 	var n C.sf_count_t
 	p := unsafe.Pointer(o.Index(0).Addr().Pointer())
 	switch t.Elem().Kind() {
-	case reflect.Int16,reflect.Uint16:
+	case reflect.Int16, reflect.Uint16:
 		n = C.sf_writef_short(f.s, (*C.short)(p), C.sf_count_t(frames))
-	case reflect.Int32,reflect.Uint32:
+	case reflect.Int32, reflect.Uint32:
 		n = C.sf_writef_int(f.s, (*C.int)(p), C.sf_count_t(frames))
 	case reflect.Float32:
 		n = C.sf_writef_float(f.s, (*C.float)(p), C.sf_count_t(frames))
 	case reflect.Float64:
 		n = C.sf_writef_double(f.s, (*C.double)(p), C.sf_count_t(frames))
-	case reflect.Int,reflect.Uint:
+	case reflect.Int, reflect.Uint:
 		switch t.Bits() {
 		case 32:
 			n = C.sf_writef_int(f.s, (*C.int)(p), C.sf_count_t(frames))
