@@ -1,9 +1,11 @@
 package sndfile
 
-import "fmt"
-import "testing"
-import "os"
-import "reflect"
+import (
+	"fmt"
+	"os"
+	"reflect"
+	"testing"
+)
 
 type testUserData struct {
 	f *os.File
@@ -17,12 +19,12 @@ func getUd(i interface{}) testUserData {
 		fmt.Fprintf(os.Stderr, "userdata didn't contain a valid struct! %v\n", reflect.TypeOf(i))
 		os.Exit(1)
 	}
-//	fmt.Printf("getUd %v\n", ud.f)
+	//	fmt.Printf("getUd %v\n", ud.f)
 	return ud
 }
 
 func testGetLength(i interface{}) int64 {
-//	fmt.Println("gogetlength")
+	//	fmt.Println("gogetlength")
 	ud := getUd(i)
 	s, err := ud.f.Stat()
 	if err != nil {
@@ -33,7 +35,7 @@ func testGetLength(i interface{}) int64 {
 }
 
 func testSeek(offset int64, whence Whence, i interface{}) int64 {
-//	fmt.Printf("goseek %d %d\n", offset, whence)
+	//	fmt.Printf("goseek %d %d\n", offset, whence)
 	ud := getUd(i)
 	var w int
 	if whence == Set {
@@ -43,7 +45,7 @@ func testSeek(offset int64, whence Whence, i interface{}) int64 {
 	} else if whence == End {
 		w = os.SEEK_END
 	}
-	
+
 	o, err := ud.f.Seek(offset, w)
 	if err != nil {
 		ud.t.Errorf("Couldn't seek for some reason: %s", err)
@@ -52,7 +54,7 @@ func testSeek(offset int64, whence Whence, i interface{}) int64 {
 }
 
 func testRead(buf []byte, i interface{}) int64 {
-//	fmt.Println("goread")
+	//	fmt.Println("goread")
 	ud := getUd(i)
 	read, err := ud.f.Read(buf)
 	if err != nil {
@@ -62,7 +64,7 @@ func testRead(buf []byte, i interface{}) int64 {
 }
 
 func testWrite(buf []byte, i interface{}) int64 {
-//	fmt.Println("gowrite")
+	//	fmt.Println("gowrite")
 	ud := getUd(i)
 	wrote, err := ud.f.Write(buf)
 	if err != nil {
@@ -72,7 +74,7 @@ func testWrite(buf []byte, i interface{}) int64 {
 }
 
 func testTell(i interface{}) int64 {
-//	fmt.Println("gotell")
+	//	fmt.Println("gotell")
 	ud := getUd(i)
 	o, err := ud.f.Seek(0, os.SEEK_CUR)
 	if err != nil {
@@ -80,7 +82,6 @@ func testTell(i interface{}) int64 {
 	}
 	return o
 }
-	
 
 // test virtual i/o by mapping virtual i/o calls to Go i/o calls
 func TestVirtualRead(t *testing.T) {
@@ -88,7 +89,7 @@ func TestVirtualRead(t *testing.T) {
 	if err != nil {
 		t.Fatalf("couldn't open input file %s", err)
 	}
-	
+
 	var vi VirtualIo
 	vi.UserData = testUserData{f, t}
 	vi.GetLength = testGetLength
@@ -96,7 +97,7 @@ func TestVirtualRead(t *testing.T) {
 	vi.Read = testRead
 	vi.Write = testWrite
 	vi.Tell = testTell
-	
+
 	var i Info
 	vf, err := OpenVirtual(vi, Read, &i)
 	if err != nil {
@@ -117,7 +118,7 @@ func TestVirtualWrite(t *testing.T) {
 	if err != nil {
 		t.Fatalf("couldn't open input file test/funky2.aiff %s", err)
 	}
-	
+
 	var vi VirtualIo
 	vi.UserData = testUserData{f, t}
 	vi.GetLength = testGetLength
@@ -125,7 +126,7 @@ func TestVirtualWrite(t *testing.T) {
 	vi.Read = testRead
 	vi.Write = testWrite
 	vi.Tell = testTell
-	
+
 	var i Info
 	i.Samplerate = 44100
 	i.Channels = 2
@@ -138,186 +139,186 @@ func TestVirtualWrite(t *testing.T) {
 	if off != 0 || err != nil {
 		t.Errorf("Seek had wrong result %v (expected 0) %v", off, err)
 	}
-	
+
 	out := []float32{
-		0.5,0.0,
-		0.5,0.0,
-		0.5,0.0,
-		0.5,0.0,
-		0.5,0.0,
-		0.5,0.0,
-		0.5,0.0,
-		0.5,0.0,
-		0.0,0.5,
-		0.0,0.5,
-		0.0,0.5,
-		0.0,0.5,
-		0.0,0.5,
-		0.0,0.5,
-		0.0,0.5,
-		0.0,0.5,
-		0.5,0.0,
-		0.5,0.0,
-		0.5,0.0,
-		0.5,0.0,
-		0.5,0.0,
-		0.5,0.0,
-		0.5,0.0,
-		0.5,0.0,
-		0.0,0.5,
-		0.0,0.5,
-		0.0,0.5,
-		0.0,0.5,
-		0.0,0.5,
-		0.0,0.5,
-		0.0,0.5,
-		0.0,0.5,
-		0.5,0.0,
-		0.5,0.0,
-		0.5,0.0,
-		0.5,0.0,
-		0.5,0.0,
-		0.5,0.0,
-		0.5,0.0,
-		0.5,0.0,
-		0.0,0.5,
-		0.0,0.5,
-		0.0,0.5,
-		0.0,0.5,
-		0.0,0.5,
-		0.0,0.5,
-		0.0,0.5,
-		0.0,0.5,
-		0.5,0.0,
-		0.5,0.0,
-		0.5,0.0,
-		0.5,0.0,
-		0.5,0.0,
-		0.5,0.0,
-		0.5,0.0,
-		0.5,0.0,
-		0.0,0.5,
-		0.0,0.5,
-		0.0,0.5,
-		0.0,0.5,
-		0.0,0.5,
-		0.0,0.5,
-		0.0,0.5,
-		0.0,0.5,
-		0.5,0.0,
-		0.5,0.0,
-		0.5,0.0,
-		0.5,0.0,
-		0.5,0.0,
-		0.5,0.0,
-		0.5,0.0,
-		0.5,0.0,
-		0.0,0.5,
-		0.0,0.5,
-		0.0,0.5,
-		0.0,0.5,
-		0.0,0.5,
-		0.0,0.5,
-		0.0,0.5,
-		0.0,0.5,
-		0.5,0.0,
-		0.5,0.0,
-		0.5,0.0,
-		0.5,0.0,
-		0.5,0.0,
-		0.5,0.0,
-		0.5,0.0,
-		0.5,0.0,
-		0.0,0.5,
-		0.0,0.5,
-		0.0,0.5,
-		0.0,0.5,
-		0.0,0.5,
-		0.0,0.5,
-		0.0,0.5,
-		0.0,0.5,
-		0.5,0.0,
-		0.5,0.0,
-		0.5,0.0,
-		0.5,0.0,
-		0.5,0.0,
-		0.5,0.0,
-		0.0,0.5,
-		0.0,0.5,
-		0.0,0.5,
-		0.0,0.5,
-		0.5,0.0,
-		0.5,0.0,
-		0.5,0.0,
-		0.5,0.0,
-		0.5,0.0,
-		0.5,0.0,
-		0.0,0.5,
-		0.0,0.5,
-		0.0,0.5,
-		0.0,0.5,
-		0.5,0.0,
-		0.5,0.0,
-		0.5,0.0,
-		0.5,0.0,
-		0.5,0.0,
-		0.5,0.0,
-		0.0,0.5,
-		0.0,0.5,
-		0.0,0.5,
-		0.0,0.5,
-		0.5,0.0,
-		0.5,0.0,
-		0.5,0.0,
-		0.5,0.0,
-		0.5,0.0,
-		0.5,0.0,
-		0.0,0.5,
-		0.0,0.5,
-		0.0,0.5,
-		0.0,0.5,
-		0.5,0.0,
-		0.5,0.0,
-		0.5,0.0,
-		0.5,0.0,
-		0.5,0.0,
-		0.5,0.0,
-		0.0,0.5,
-		0.0,0.5,
-		0.0,0.5,
-		0.0,0.5,
-		0.5,0.0,
-		0.5,0.0,
-		0.5,0.0,
-		0.5,0.0,
-		0.5,0.0,
-		0.5,0.0,
-		0.5,0.0,
-		0.5,0.0,
-		0.0,0.5,
-		0.0,0.5,
-		0.0,0.5,
-		0.0,0.5,
-		0.0,0.5,
-		0.0,0.5,
-		0.0,0.5,
-		0.0,0.5,
-		0.5,0.0,
-		0.5,0.0,
-		0.5,0.0,
-		0.5,0.0,
-		0.5,0.0,
-		0.5,0.0,
-		0.5,0.0,
-		0.5,0.0,
-		0.0,0.5,
-		0.0,0.5,
-		0.0,0.5,
-		0.0,0.5,
-		0.0,0.5,
-		0.0,0.5,
-		0.0,0.5,
-		0.0,0.5	}
+		0.5, 0.0,
+		0.5, 0.0,
+		0.5, 0.0,
+		0.5, 0.0,
+		0.5, 0.0,
+		0.5, 0.0,
+		0.5, 0.0,
+		0.5, 0.0,
+		0.0, 0.5,
+		0.0, 0.5,
+		0.0, 0.5,
+		0.0, 0.5,
+		0.0, 0.5,
+		0.0, 0.5,
+		0.0, 0.5,
+		0.0, 0.5,
+		0.5, 0.0,
+		0.5, 0.0,
+		0.5, 0.0,
+		0.5, 0.0,
+		0.5, 0.0,
+		0.5, 0.0,
+		0.5, 0.0,
+		0.5, 0.0,
+		0.0, 0.5,
+		0.0, 0.5,
+		0.0, 0.5,
+		0.0, 0.5,
+		0.0, 0.5,
+		0.0, 0.5,
+		0.0, 0.5,
+		0.0, 0.5,
+		0.5, 0.0,
+		0.5, 0.0,
+		0.5, 0.0,
+		0.5, 0.0,
+		0.5, 0.0,
+		0.5, 0.0,
+		0.5, 0.0,
+		0.5, 0.0,
+		0.0, 0.5,
+		0.0, 0.5,
+		0.0, 0.5,
+		0.0, 0.5,
+		0.0, 0.5,
+		0.0, 0.5,
+		0.0, 0.5,
+		0.0, 0.5,
+		0.5, 0.0,
+		0.5, 0.0,
+		0.5, 0.0,
+		0.5, 0.0,
+		0.5, 0.0,
+		0.5, 0.0,
+		0.5, 0.0,
+		0.5, 0.0,
+		0.0, 0.5,
+		0.0, 0.5,
+		0.0, 0.5,
+		0.0, 0.5,
+		0.0, 0.5,
+		0.0, 0.5,
+		0.0, 0.5,
+		0.0, 0.5,
+		0.5, 0.0,
+		0.5, 0.0,
+		0.5, 0.0,
+		0.5, 0.0,
+		0.5, 0.0,
+		0.5, 0.0,
+		0.5, 0.0,
+		0.5, 0.0,
+		0.0, 0.5,
+		0.0, 0.5,
+		0.0, 0.5,
+		0.0, 0.5,
+		0.0, 0.5,
+		0.0, 0.5,
+		0.0, 0.5,
+		0.0, 0.5,
+		0.5, 0.0,
+		0.5, 0.0,
+		0.5, 0.0,
+		0.5, 0.0,
+		0.5, 0.0,
+		0.5, 0.0,
+		0.5, 0.0,
+		0.5, 0.0,
+		0.0, 0.5,
+		0.0, 0.5,
+		0.0, 0.5,
+		0.0, 0.5,
+		0.0, 0.5,
+		0.0, 0.5,
+		0.0, 0.5,
+		0.0, 0.5,
+		0.5, 0.0,
+		0.5, 0.0,
+		0.5, 0.0,
+		0.5, 0.0,
+		0.5, 0.0,
+		0.5, 0.0,
+		0.0, 0.5,
+		0.0, 0.5,
+		0.0, 0.5,
+		0.0, 0.5,
+		0.5, 0.0,
+		0.5, 0.0,
+		0.5, 0.0,
+		0.5, 0.0,
+		0.5, 0.0,
+		0.5, 0.0,
+		0.0, 0.5,
+		0.0, 0.5,
+		0.0, 0.5,
+		0.0, 0.5,
+		0.5, 0.0,
+		0.5, 0.0,
+		0.5, 0.0,
+		0.5, 0.0,
+		0.5, 0.0,
+		0.5, 0.0,
+		0.0, 0.5,
+		0.0, 0.5,
+		0.0, 0.5,
+		0.0, 0.5,
+		0.5, 0.0,
+		0.5, 0.0,
+		0.5, 0.0,
+		0.5, 0.0,
+		0.5, 0.0,
+		0.5, 0.0,
+		0.0, 0.5,
+		0.0, 0.5,
+		0.0, 0.5,
+		0.0, 0.5,
+		0.5, 0.0,
+		0.5, 0.0,
+		0.5, 0.0,
+		0.5, 0.0,
+		0.5, 0.0,
+		0.5, 0.0,
+		0.0, 0.5,
+		0.0, 0.5,
+		0.0, 0.5,
+		0.0, 0.5,
+		0.5, 0.0,
+		0.5, 0.0,
+		0.5, 0.0,
+		0.5, 0.0,
+		0.5, 0.0,
+		0.5, 0.0,
+		0.5, 0.0,
+		0.5, 0.0,
+		0.0, 0.5,
+		0.0, 0.5,
+		0.0, 0.5,
+		0.0, 0.5,
+		0.0, 0.5,
+		0.0, 0.5,
+		0.0, 0.5,
+		0.0, 0.5,
+		0.5, 0.0,
+		0.5, 0.0,
+		0.5, 0.0,
+		0.5, 0.0,
+		0.5, 0.0,
+		0.5, 0.0,
+		0.5, 0.0,
+		0.5, 0.0,
+		0.0, 0.5,
+		0.0, 0.5,
+		0.0, 0.5,
+		0.0, 0.5,
+		0.0, 0.5,
+		0.0, 0.5,
+		0.0, 0.5,
+		0.0, 0.5}
 	out = append(out, out...)
 	out = append(out, out...)
 	out = append(out, out...)
@@ -340,10 +341,10 @@ func TestVirtualWrite(t *testing.T) {
 	if err != nil {
 		t.Fatalf("couldn't open input file %s", err)
 	}
-	
-//	fmt.Println(ri)
-//	fmt.Println(rf)
-	
+
+	//	fmt.Println(ri)
+	//	fmt.Println(rf)
+
 	if ri.Frames != int64(len(out)/2) {
 		t.Errorf("length in samples not as expected! %d vs. expected %d", ri.Frames, len(out)/2)
 	}

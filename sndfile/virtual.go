@@ -3,10 +3,11 @@ package sndfile
 // #include <sndfile.h>
 // #include "virtual.h"
 import "C"
-//import "fmt"
-import "runtime"
-import "unsafe"
-import "errors"
+import (
+	"errors"
+	"runtime"
+	"unsafe"
+)
 
 type VIO_get_filelen func(interface{}) int64
 type VIO_seek func(int64, Whence, interface{}) int64

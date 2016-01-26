@@ -1,12 +1,15 @@
 package sndfile
 
-import "os"
-import "encoding/binary"
-import "math"
-import "reflect"
-import "testing"
-import "strings"
-import "unsafe"
+import (
+	"encoding/binary"
+	"math"
+	"os"
+	"reflect"
+	"regexp"
+	"strings"
+	"testing"
+	"unsafe"
+)
 
 func TestGetLibVersion(t *testing.T) {
 	s, _ := GetLibVersion()
@@ -459,11 +462,11 @@ func TestScaleFactor(t *testing.T) {
 	}
 	f.SetFloatIntScaleRead(true)
 	n, err = f.ReadItems(in)
-	if !reflect.DeepEqual(in, []int16{16384, 16384}) {
+	if !reflect.DeepEqual(in, []int16{16383, 16383}) {
 		t.Error("bad read 2", in)
 	}
 	n, err = f.ReadItems(in)
-	if !reflect.DeepEqual(in, []int16{32767, 32767}) {
+	if !reflect.DeepEqual(in, []int16{32766, 32766}) {
 		t.Error("bad read 3", in)
 	}
 	f.SetFloatIntScaleRead(false)
@@ -558,9 +561,7 @@ func TestBroadcast(t *testing.T) {
 	bi.Time_reference_high = 7891011
 	bi.Version = 1 // libsndfile always writes a 1
 	bi.Umid = "ummm"
-	bi.Coding_history = make([]int8, 257) // we don't set coding history, libsndfile does that
-	bi.Coding_history[255] = 0x7f
-	bi.Coding_history[256] = 0x11
+	bi.Coding_history = ""
 	f.SetBroadcastInfo(&bi)
 	f.Close()
 
@@ -575,12 +576,9 @@ func TestBroadcast(t *testing.T) {
 	if bi.Description != bi2.Description {
 		t.Error("desc doesn't match \"" + bi.Description + "\" \"" + bi2.Description + "\"")
 	}
-	if !reflect.DeepEqual(bi2.Coding_history, []int8{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 65, 61, 80, 67, 77, 44, 70, 61, 56, 48, 48, 48, 44, 87, 61, 49, 54, 44, 77, 61, 109, 111, 110, 111, 44, 84, 61, 108, 105, 98, 115, 110, 100, 102, 105, 108, 101, 45, 49, 46, 48, 46, 50, 53, 13, 10, 0, 0}) {
-		t.Error("coding history mismatch")
-	}
-	bi.Coding_history = []int8{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 65, 61, 80, 67, 77, 44, 70, 61, 56, 48, 48, 48, 44, 87, 61, 49, 54, 44, 77, 61, 109, 111, 110, 111, 44, 84, 61, 108, 105, 98, 115, 110, 100, 102, 105, 108, 101, 45, 49, 46, 48, 46, 50, 53, 13, 10, 0, 0}
-	if !reflect.DeepEqual(&bi, bi2) {
-		t.Error("deepequal fails", &bi, bi2)
+	expected_coding_history := regexp.MustCompile("A=PCM,F=8000,W=16,M=mono,T=libsndfile-.*")
+	if expected_coding_history.MatchString(bi.Coding_history) {
+		t.Error("coding history mismatch: ", bi2.Coding_history, " != ", expected_coding_history)
 	}
 }
 
