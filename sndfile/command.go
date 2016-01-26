@@ -398,15 +398,15 @@ func cFromBroadcast(bi *BroadcastInfo) (c *C.SF_BROADCAST_INFO) {
 	arrFromGoString(c.originator_reference[:], bi.Originator_reference)
 	arrFromGoString(c.origination_date[:], bi.Origination_date)
 	arrFromGoString(c.origination_time[:], bi.Origination_time)
-	c.time_reference_low = C.uint(bi.Time_reference_low)
-	c.time_reference_high = C.uint(bi.Time_reference_high)
+	c.time_reference_low = C.uint32_t(bi.Time_reference_low)
+	c.time_reference_high = C.uint32_t(bi.Time_reference_high)
 	c.version = C.short(bi.Version)
 	arrFromGoString(c.umid[:], bi.Umid)
 	ch := bi.Coding_history
 	if len(bi.Coding_history) > 256 {
 		ch = bi.Coding_history[0:256]
 	}
-	c.coding_history_size = C.uint(len(ch))
+	c.coding_history_size = C.uint32_t(len(ch))
 	for i, r := range ch {
 		c.coding_history[i] = C.char(r)
 	}
@@ -519,9 +519,9 @@ func (f *File) SetInstrument(i *Instrument) bool {
 	var index int
 	for ; index < i.LoopCount; index++ {
 		c.loops[index].mode = C.int(i.Loops[index].Mode)
-		c.loops[index].start = C.uint(i.Loops[index].Start)
-		c.loops[index].end = C.uint(i.Loops[index].End)
-		c.loops[index].count = C.uint(i.Loops[index].Count)
+		c.loops[index].start = C.uint32_t(i.Loops[index].Start)
+		c.loops[index].end = C.uint32_t(i.Loops[index].End)
+		c.loops[index].count = C.uint32_t(i.Loops[index].Count)
 	}
 	for ; index < 16; index++ {
 		c.loops[index].mode = C.int(None)
