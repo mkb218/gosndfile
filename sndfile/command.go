@@ -368,28 +368,6 @@ func arrFromGoString(arr []C.char, src string) {
 	}
 }
 
-func cFromBroadcast(bi *BroadcastInfo) (c *C.SF_BROADCAST_INFO) {
-	c = new(C.SF_BROADCAST_INFO)
-	arrFromGoString(c.description[:], bi.Description)
-	arrFromGoString(c.originator[:], bi.Originator)
-	arrFromGoString(c.originator_reference[:], bi.Originator_reference)
-	arrFromGoString(c.origination_date[:], bi.Origination_date)
-	arrFromGoString(c.origination_time[:], bi.Origination_time)
-	c.time_reference_low = C.uint32_t(bi.Time_reference_low)
-	c.time_reference_high = C.uint32_t(bi.Time_reference_high)
-	c.version = C.short(bi.Version)
-	arrFromGoString(c.umid[:], bi.Umid)
-	ch := bi.Coding_history
-	if len(bi.Coding_history) > 256 {
-		ch = bi.Coding_history[0:256]
-	}
-	c.coding_history_size = C.uint32_t(len(ch))
-	for i, r := range ch {
-		c.coding_history[i] = C.char(r)
-	}
-	return c
-}
-
 // Set the Broadcast Extension Chunk from WAV (and related) files.
 func (f *File) SetBroadcastInfo(bi *BroadcastInfo) (err error) {
 	c := cFromBroadcast(bi)
@@ -478,35 +456,6 @@ func (f *File) GetInstrument() (i *Instrument) {
 		}
 	}
 	return
-}
-
-// Set instrument information from file including MIDI base note, keyboard mapping and looping information (start/stop and mode).
-
-// Return true if the file header contains instrument information for the file. false otherwise.
-func (f *File) SetInstrument(i *Instrument) bool {
-	c := new(C.SF_INSTRUMENT)
-	c.gain = C.int(i.Gain)
-	c.basenote = C.char(i.Basenote)
-	c.detune = C.char(i.Detune)
-	c.velocity_lo = C.char(i.Velocity[0])
-	c.velocity_hi = C.char(i.Velocity[1])
-	c.key_lo = C.char(i.Key[0])
-	c.key_hi = C.char(i.Key[1])
-	c.loop_count = C.int(i.LoopCount)
-	var index int
-	for ; index < i.LoopCount; index++ {
-		c.loops[index].mode = C.int(i.Loops[index].Mode)
-		c.loops[index].start = C.uint32_t(i.Loops[index].Start)
-		c.loops[index].end = C.uint32_t(i.Loops[index].End)
-		c.loops[index].count = C.uint32_t(i.Loops[index].Count)
-	}
-	for ; index < 16; index++ {
-		c.loops[index].mode = C.int(None)
-		// why is this necessary? libsndfile doesn't check loopcount for AIFF
-	}
-
-	r := C.sf_command(f.s, C.SFC_SET_INSTRUMENT, unsafe.Pointer(c), C.int(unsafe.Sizeof(*c)))
-	return (r == C.SF_TRUE)
 }
 
 // This allows libsndfile experts to use the command interface for commands not currently supported. See http://www.mega-nerd.com/libsndfile/command.html
