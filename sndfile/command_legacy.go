@@ -7,9 +7,7 @@ package sndfile
 // #include <sndfile.h>
 // #include <string.h>
 import "C"
-import (
-	"unsafe"
-)
+import "unsafe"
 
 func broadcastFromC(c *C.SF_BROADCAST_INFO) *BroadcastInfo {
 	bi := new(BroadcastInfo)
