@@ -136,6 +136,7 @@ const (
 	SF_FORMAT_DPCM_16 Format = 0x0051 /* 16 bit differential PCM (XI only) */
 
 	SF_FORMAT_VORBIS Format = 0x0060 /* Xiph Vorbis encoding. */
+	SF_FORMAT_OPUS   Format = 0x0064 /* Xiph/Skype Opus encoding. */
 
 	/* Endian-ness options. */
 
